@@ -9,7 +9,13 @@ import 'history_page.dart';
 class HomePage extends StatelessWidget {
   HomePage({super.key});
 
-  final List titles = ["اضافه فاتوره", "جرد", "يوميه", "اي حاجه", "هاي"];
+  final List<String> titles = [
+    "اضافه فاتوره",
+    "جرد",
+    "يوميه",
+    " كشوفات",
+    "فواتير",
+  ];
   final List icons = [
     Icons.add,
     Icons.browse_gallery_outlined,
@@ -29,59 +35,67 @@ class HomePage extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 8.h),
               child: SizedBox(
                 width: MediaQuery.sizeOf(context).width,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(5, (index) {
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      child: Container(
-                        constraints: constraints,
-                        height: MediaQuery.sizeOf(context).width * .06,
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(50.r),
-                          gradient: LinearGradient(
-                            colors: AppColors.gradientList,
-                          ),
-                          border: Border.all(color: Colors.greenAccent),
+                height: MediaQuery.sizeOf(context).height,
+                child: FittedBox(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(5, (index) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8.h,
+                          horizontal: 8,
                         ),
-                        width: MediaQuery.sizeOf(context).width * .2,
-                        child: IconButton(
-                          onPressed: () {
-                            if (index == 0) {
-                              toAddBillPage(context);
-                            } else if (index == 1) {
-                              toHistoryPage(context);
-                            } else if (index == 2) {
-                              // Navigate to another page
-                            } else if (index == 3) {
-                              // Navigate to another page
-                            } else if (index == 4) {
-                              // Navigate to another page
-                            }
-                          },
-                          icon: FittedBox(
-                            fit: BoxFit.cover,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Icon(icons[index], size: 14.dm),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  titles[index],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12.sp,
+                        child: Container(
+                          constraints: constraints,
+                          height: 48.h,
+
+                          // padding: EdgeInsets.symmetric(horizontal: 8.w),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50.r),
+                            gradient: LinearGradient(
+                              colors: AppColors.gradientList,
+                            ),
+                            border: Border.all(color: Colors.greenAccent),
+                          ),
+                          width: MediaQuery.sizeOf(context).width * .2,
+                          child: IconButton(
+                            onPressed: () {
+                              if (index == 0) {
+                              } else if (index == 1) {
+                              } else if (index == 2) {
+                                // Navigate to another page
+                              } else if (index == 3) {
+                                toHistoryPage(context);
+                                // Navigate to another page
+                              } else if (index == 4) {
+                                toAddBillPage(context);
+                                // Navigate to another page
+                              }
+                            },
+                            icon: FittedBox(
+                              fit: BoxFit.cover,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Icon(icons[index], size: 16.dm),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    titles[index],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14.sp,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
               ),
             );

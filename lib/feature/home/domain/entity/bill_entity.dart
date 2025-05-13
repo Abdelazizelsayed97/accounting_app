@@ -33,7 +33,7 @@ class BillItemEntity {
 class PurchaseEntity {
   final List<BillItemEntity> bill;
   final String buyer;
-  final int total;
+  final double total;
 
   PurchaseEntity({
     required this.bill,
@@ -44,16 +44,19 @@ class PurchaseEntity {
   Map<String, dynamic> toMap() => {
     'bill': bill.map((e) => e.toMap()).toList(),
     'buyer': buyer,
-    "total": total,
+    'total': total,
   };
 
   factory PurchaseEntity.fromMap(Map<String, dynamic> map) {
     return PurchaseEntity(
-      bill: List<BillItemEntity>.from(
-        map['bill']?.map((x) => BillItemEntity.fromMap(x)),
-      ),
-      buyer: map['buyer'],
-      total: map['total'],
+      bill:
+          map['bill'] != null
+              ? List<BillItemEntity>.from(
+                map['bill'].map((x) => BillItemEntity.fromMap(x)),
+              )
+              : [],
+      buyer: map['buyer_name'],
+      total: map['total_amount'],
     );
   }
 }

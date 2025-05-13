@@ -34,7 +34,7 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 8.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.normal,
                     ),
                   ),
@@ -55,7 +55,7 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 22.sp,
                   fontWeight: FontWeight.normal,
                 ),
               ),
