@@ -1,16 +1,19 @@
 class BillItemEntity {
-  double price;
-  double weight;
-  int count;
-  String name;
-  double total;
+  final double price;
+  final double weight;
+  final int count;
+  final String name;
+  final double total;
+  final String type;
 
   BillItemEntity({
     required this.price,
     required this.weight,
     required this.count,
     required this.name,
-  }) : total = price * weight * count;
+    required this.total,
+    required this.type,
+  });
 
   Map<String, dynamic> toMap() => {
     'price': price,
@@ -18,14 +21,17 @@ class BillItemEntity {
     'count': count,
     'name': name,
     'total': total,
+    'type': type,
   };
 
   factory BillItemEntity.fromMap(Map<String, dynamic> map) {
     return BillItemEntity(
-      price: map['price'],
-      weight: map['weight'],
-      count: map['count'],
-      name: map['name'],
+      price: map['price']?.toDouble() ?? 0.0,
+      weight: map['weight']?.toDouble() ?? 0.0,
+      count: map['count'] ?? 0,
+      name: map['fruit_name'] ?? '',
+      total: map['total']?.toDouble() ?? 0.0,
+      type: map['type'] ?? '',
     );
   }
 }

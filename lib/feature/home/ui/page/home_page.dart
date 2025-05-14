@@ -1,21 +1,16 @@
 import 'package:accounting_app/core/colors.dart';
+import 'package:accounting_app/feature/home/ui/page/purchases_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../widgets/gradient_app_bar.dart';
-import 'add_bill_page.dart';
-import 'history_page.dart';
+import 'daily_opration_page.dart';
+import 'imports_page.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
 
-  final List<String> titles = [
-    "اضافه فاتوره",
-    "جرد",
-    "يوميه",
-    " كشوفات",
-    "فواتير",
-  ];
+  final List<String> titles = [" كشوفات", "فواتير", "زمامات", "يوميه", "جرد"];
   final List icons = [
     Icons.add,
     Icons.browse_gallery_outlined,
@@ -36,40 +31,40 @@ class HomePage extends StatelessWidget {
               child: SizedBox(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height,
-                child: FittedBox(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                child: Center(
+                  child: Wrap(
+                    // crossAxisAlignment: WrapCrossAlignment.end,
+                    alignment: WrapAlignment.end,
                     children: List.generate(5, (index) {
                       return Padding(
                         padding: EdgeInsets.symmetric(
                           vertical: 8.h,
-                          horizontal: 8,
+                          horizontal: 8.w,
                         ),
                         child: Container(
                           constraints: constraints,
-                          height: 48.h,
+                          height: MediaQuery.sizeOf(context).height * .2,
 
                           // padding: EdgeInsets.symmetric(horizontal: 8.w),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(50.r),
+                            borderRadius: BorderRadius.circular(60.r),
                             gradient: LinearGradient(
                               colors: AppColors.gradientList,
                             ),
                             border: Border.all(color: Colors.greenAccent),
                           ),
-                          width: MediaQuery.sizeOf(context).width * .2,
+                          width: MediaQuery.sizeOf(context).width * .4,
                           child: IconButton(
                             onPressed: () {
                               if (index == 0) {
+                                navigateTo(context, ImportsPage());
                               } else if (index == 1) {
+                                navigateTo(context, PurchasesPage());
                               } else if (index == 2) {
                                 // Navigate to another page
                               } else if (index == 3) {
-                                toHistoryPage(context);
-                                // Navigate to another page
+                                navigateTo(context, DailyOperationWidget());
                               } else if (index == 4) {
-                                toAddBillPage(context);
                                 // Navigate to another page
                               }
                             },
@@ -79,13 +74,13 @@ class HomePage extends StatelessWidget {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Icon(icons[index], size: 16.dm),
+                                  Icon(icons[index], size: 18.dm),
                                   SizedBox(width: 8.w),
                                   Text(
                                     titles[index],
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14.sp,
+                                      fontSize: 16.sp,
                                     ),
                                   ),
                                 ],
@@ -107,12 +102,12 @@ class HomePage extends StatelessWidget {
 
   void toAddBillPage(BuildContext context) => Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => AddBillPage()),
+    MaterialPageRoute(builder: (context) => ImportsPage()),
   );
 
-  void toHistoryPage(BuildContext context) => Navigator.push(
+  void navigateTo(BuildContext context, Widget destination) => Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => HistoryPage()),
+    MaterialPageRoute(builder: (context) => destination),
   );
 }
 
@@ -126,10 +121,11 @@ class BackGroundWidget extends StatelessWidget {
     return Stack(
       children: [
         Opacity(
-          opacity: .15,
+          opacity: .10,
           child: Container(
             clipBehavior: Clip.antiAlias,
             width: double.infinity,
+            height: double.infinity,
             decoration: BoxDecoration(),
             child: Image.asset(
               "lib/assets/abstract-textured-backgound.jpg",

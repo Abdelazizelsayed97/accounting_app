@@ -37,19 +37,35 @@ class FruitShopDatabase {
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
               );
             ''');
-
+          await db.execute('''
+          CREATE TABLE IF NOT EXISTS daily_operations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            type TEXT CHECK(type IN ('income', 'spend')) NOT NULL,
+            date TEXT NOT NULL
+          )
+        ''');
+          await db.execute('''
+          CREATE TABLE IF NOT EXISTS daily_operations_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            total_income REAL,
+            total_spend REAL,
+            date TEXT NOT NULL
+          )
+        ''');
           // Create purchases table
           await db.execute('''
-              CREATE TABLE purchases (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                buyer_id INTEGER,
-                total_amount REAL,
-                date TEXT DEFAULT CURRENT_TIMESTAMP,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE
-              );
-            ''');
-
+CREATE TABLE purchases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  buyer_id INTEGER,
+  total_amount REAL,
+  date TEXT DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  type TEXT DEFAULT 'fruits',
+  FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE
+)
+''');
+          // create
           // Create bill_items table
           await db.execute('''
               CREATE TABLE bill_items (
@@ -306,15 +322,72 @@ class FruitShopDatabase {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
+  static Future<void> insertOperation(double amount, String type) async {
+    final db = await database;
+    await db.insert('daily_operations', {
+      'amount': amount,
+      'type': type,
+      'date': DateTime.now().toIso8601String().substring(0, 10),
+    });
+  }
+
+  static Future<List<Map<String, dynamic>>> getTodayOperations() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    return await db.query(
+      'daily_operations',
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+  }
+
+  static Future<void> archiveAndResetIfNewDay() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    final ops = await db.query('daily_operations');
+    if (ops.isEmpty) return;
+
+    final lastDate = ops.first['date'];
+    if (lastDate != today) {
+      final incomeTotal = ops
+          .where((e) => e['type'] == 'income')
+          .fold(0.0, (sum, e) => sum + (e['amount'] as num));
+      final spendTotal = ops
+          .where((e) => e['type'] == 'spend')
+          .fold(0.0, (sum, e) => sum + (e['amount'] as num));
+
+      await db.insert('daily_operations_history', {
+        'total_income': incomeTotal,
+        'total_spend': spendTotal,
+        'date': lastDate,
+      });
+
+      await db.delete('daily_operations');
+    }
+  }
+
   // Query operations
-  static Future<List<Map<String, dynamic>>> getAllPurchases() async {
+  static Future<List<Map<String, dynamic>>> getAllPurchasesWithItems() async {
     final db = await database;
     return await db.rawQuery('''
-    SELECT p.id, p.date, p.total_amount, 
-           COALESCE(b.name, '') as buyer_name
+    SELECT 
+      p.id AS purchase_id,
+      p.date,
+      p.total_amount,
+      COALESCE(b.name, '') AS buyer_name,
+      f.name AS item_name,
+      bi.price AS item_price,
+      bi.weight AS item_weight,
+      bi.count AS item_count,
+      bi.total AS item_total
+
     FROM purchases p
     JOIN buyers b ON p.buyer_id = b.id
-    ORDER BY p.date DESC
+    LEFT JOIN bill_items bi ON bi.purchase_id = p.id
+    LEFT JOIN fruits f ON f.id = bi.fruit_id
+
+    ORDER BY p.date DESC, bi.id ASC
   ''');
   }
 
@@ -461,6 +534,8 @@ class FruitShopDatabase {
                 weight: item['weight'] as double,
                 count: item['count'] as int,
                 name: item['name'] as String,
+                total: item['total'] as double,
+                type: item['type'] as String,
               ),
             )
             .toList();
@@ -614,21 +689,6 @@ class FruitShopDatabase {
       ORDER BY date
     ''',
       [startDateStr, endDateStr],
-    );
-  }
-
-  // Update fruit price
-  static Future<int> updateFruitPrice(int fruitId, double newPrice) async {
-    final db = await database;
-
-    return await db.update(
-      'fruits',
-      {
-        'price_per_kg': newPrice,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [fruitId],
     );
   }
 

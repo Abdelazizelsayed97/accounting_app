@@ -19,11 +19,14 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          width: MediaQuery.sizeOf(context).width,
-          height: kToolbarHeight.h,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: AppColors.gradientList),
+        Opacity(
+          opacity: .5,
+          child: Container(
+            width: MediaQuery.sizeOf(context).width,
+            height: kToolbarHeight.h,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.gradientList),
+            ),
           ),
         ),
         hasPop
@@ -35,7 +38,7 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
                     title,
                     style: TextStyle(
                       fontSize: 12.sp,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
