@@ -131,6 +131,8 @@ class _DailyOperationWidgetState extends State<DailyOperationWidget> {
       body: BackGroundWidget(
         Center(
           child: Container(
+            color: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
             width: MediaQuery.sizeOf(context).width * 0.4,
             child: Column(
               children: [

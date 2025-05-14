@@ -111,10 +111,15 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
+        SizedBox(height: 16.h),
         Container(
           height: 50.h,
-          decoration: BoxDecoration(color: Colors.white),
-          width: MediaQuery.of(context).size.width * 0.4,
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+          ),
+          width: MediaQuery.of(context).size.width * 0.43,
           child: Column(
             children: [
               Text("زسكر  للخضراواتفا "),
@@ -128,72 +133,76 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
             ],
           ),
         ),
-        SizedBox(
-          width: MediaQuery.of(context).size.width * 0.4,
+        Container(
+          color: Colors.white,
+          width: MediaQuery.of(context).size.width * 0.43,
           height: calculateGridHeight(),
-          child: PlutoGrid(
-            // createHeader: (stateManager) {
-            //   return Column(
-            //     children: [
-            //       Text("زسكر  للخضراواتفا "),
-            //       SizedBox(
-            //         height: 20.h,
-            //         child: AppField(controller: controller),
-            //       ),
-            //     ],
-            //   );
-            // },
-            configuration: PlutoGridConfiguration(
-              columnFilter: PlutoGridColumnFilterConfig(),
-              localeText: PlutoGridLocaleText(autoFitColumn: "تعبئة تلقائية"),
-              style: PlutoGridStyleConfig(
-                defaultCellPadding: EdgeInsets.zero,
-                defaultColumnFilterPadding: EdgeInsets.zero,
-                defaultColumnTitlePadding: EdgeInsets.zero,
-                borderColor: AppColors.primaryColor,
-                gridBorderRadius: BorderRadius.circular(8.r),
-                columnFilterHeight: 0,
-                rowHeight: rowHeight,
-                columnHeight: headerHeight,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
+            child: PlutoGrid(
+              // createHeader: (stateManager) {
+              //   return Column(
+              //     children: [
+              //       Text("زسكر  للخضراواتفا "),
+              //       SizedBox(
+              //         height: 20.h,
+              //         child: AppField(controller: controller),
+              //       ),
+              //     ],
+              //   );
+              // },
+              configuration: PlutoGridConfiguration(
+                columnFilter: PlutoGridColumnFilterConfig(),
+                localeText: PlutoGridLocaleText(autoFitColumn: "تعبئة تلقائية"),
+                style: PlutoGridStyleConfig(
+                  defaultCellPadding: EdgeInsets.zero,
+                  defaultColumnFilterPadding: EdgeInsets.zero,
+                  defaultColumnTitlePadding: EdgeInsets.zero,
+                  borderColor: AppColors.primaryColor,
+                  gridBorderRadius: BorderRadius.circular(8.r),
+                  columnFilterHeight: 0,
+                  rowHeight: rowHeight,
+                  columnHeight: headerHeight,
+                ),
+                columnSize: PlutoGridColumnSizeConfig(
+                  autoSizeMode: PlutoAutoSizeMode.scale,
+                  restoreAutoSizeAfterInsertColumn: false,
+                ),
               ),
-              columnSize: PlutoGridColumnSizeConfig(
-                autoSizeMode: PlutoAutoSizeMode.scale,
-                restoreAutoSizeAfterInsertColumn: false,
-              ),
-            ),
-            columns: widget.columns,
-            rows: widget.rows,
-            onLoaded: (event) => stateManager = event.stateManager,
-            onChanged: (event) => setState(() => updateRowTotal(event.row)),
+              columns: widget.columns,
+              rows: widget.rows,
+              onLoaded: (event) => stateManager = event.stateManager,
+              onChanged: (event) => setState(() => updateRowTotal(event.row)),
 
-            createFooter:
-                (_) => Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4.h),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: widget.onAddRow,
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: AppColors.gradientList,
+              createFooter:
+                  (_) => Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.h),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: widget.onAddRow,
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: AppColors.gradientList,
+                              ),
+                              borderRadius: BorderRadius.circular(30.r),
                             ),
-                            borderRadius: BorderRadius.circular(30.r),
-                          ),
-                          height: 20.h,
-                          width: 100.w,
-                          child: Text(
-                            "إضافة صف جديد",
-                            style: TextStyle(fontSize: 8.sp),
+                            height: 20.h,
+                            width: 100.w,
+                            child: Text(
+                              "إضافة صف جديد",
+                              style: TextStyle(fontSize: 8.sp),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 4.h),
-                      buildFooterSums(),
-                    ],
+                        SizedBox(height: 4.h),
+                        buildFooterSums(),
+                      ],
+                    ),
                   ),
-                ),
+            ),
           ),
         ),
       ],
