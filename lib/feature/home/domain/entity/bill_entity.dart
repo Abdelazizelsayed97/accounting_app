@@ -2,7 +2,8 @@ class BillItemEntity {
   final double price;
   final double weight;
   final int count;
-  final String name;
+  final String fruitName;
+  final String customerName; // <-- NEW
   final double total;
   final String type;
 
@@ -10,7 +11,8 @@ class BillItemEntity {
     required this.price,
     required this.weight,
     required this.count,
-    required this.name,
+    required this.fruitName,
+    required this.customerName,
     required this.total,
     required this.type,
   });
@@ -19,7 +21,8 @@ class BillItemEntity {
     'price': price,
     'weight': weight,
     'count': count,
-    'name': name,
+    'fruit_name': fruitName,
+    'customer_name': customerName,
     'total': total,
     'type': type,
   };
@@ -29,7 +32,8 @@ class BillItemEntity {
       price: map['price']?.toDouble() ?? 0.0,
       weight: map['weight']?.toDouble() ?? 0.0,
       count: map['count'] ?? 0,
-      name: map['fruit_name'] ?? '',
+      fruitName: map['fruit_name'] ?? '',
+      customerName: map['customer_name'] ?? '',
       total: map['total']?.toDouble() ?? 0.0,
       type: map['type'] ?? '',
     );
@@ -38,18 +42,18 @@ class BillItemEntity {
 
 class PurchaseEntity {
   final List<BillItemEntity> bill;
-  final String buyer;
+  final String ownerName;
   final double total;
 
   PurchaseEntity({
     required this.bill,
-    required this.buyer,
+    required this.ownerName,
     required this.total,
   });
 
   Map<String, dynamic> toMap() => {
     'bill': bill.map((e) => e.toMap()).toList(),
-    'buyer': buyer,
+    'owner_name': ownerName,
     'total': total,
   };
 
@@ -61,8 +65,8 @@ class PurchaseEntity {
                 map['bill'].map((x) => BillItemEntity.fromMap(x)),
               )
               : [],
-      buyer: map['buyer_name'],
-      total: map['total_amount'],
+      ownerName: map['owner_name'] ?? '',
+      total: map['total_amount']?.toDouble() ?? 0.0,
     );
   }
 }

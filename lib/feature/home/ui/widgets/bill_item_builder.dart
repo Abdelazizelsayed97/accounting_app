@@ -5,6 +5,7 @@ import 'package:pluto_grid/pluto_grid.dart';
 
 import '../../../../core/app_field.dart';
 import '../../../../core/colors.dart';
+import '../../data/db/data_base.dart';
 
 class PurchaseGridWidget extends StatefulWidget {
   final List<PlutoColumn> columns;
@@ -12,16 +13,14 @@ class PurchaseGridWidget extends StatefulWidget {
   final void Function()? onAddRow;
   final PurchaseEntity? data;
   final bool canEdit;
-  // final bool isPurchase;
 
-  PurchaseGridWidget({
+  const PurchaseGridWidget({
     super.key,
     required this.columns,
     required this.rows,
     this.onAddRow,
     this.data,
     required this.canEdit,
-    // required this.isPurchase,
   });
 
   @override
@@ -29,11 +28,10 @@ class PurchaseGridWidget extends StatefulWidget {
 }
 
 class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
-  TextEditingController controller = TextEditingController();
+  final TextEditingController controller = TextEditingController();
   PlutoGridStateManager? stateManager;
 
   double get rowHeight => 20.h;
-
   double get headerHeight => 20.h;
 
   double calculateGridHeight() {
@@ -42,17 +40,16 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
 
   void updateRowTotal(PlutoRow row) {
     final price = row.cells['price']?.value ?? 0;
-    final weight = row.cells['price1']?.value ?? 0;
-    row.cells['price4']?.value = (price * weight).toDouble();
+    final weight = row.cells['weight']?.value ?? 0;
+    row.cells['total']?.value = (price * weight).toDouble();
     stateManager?.notifyListeners();
   }
 
   @override
-  initState() {
-    if (controller.text.isEmpty) {
-      controller.text = widget.data?.buyer ?? '';
-    }
+  void initState() {
+    print('data ==== ${widget.data?.ownerName}');
     super.initState();
+    controller.text = widget.data?.ownerName ?? '';
   }
 
   Widget buildFooterSums() {
@@ -62,8 +59,8 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
 
     for (var row in widget.rows) {
       totalPrice += row.cells['price']?.value ?? 0;
-      totalWeight += row.cells['price1']?.value ?? 0;
-      grandTotal += row.cells['price4']?.value ?? 0;
+      totalWeight += row.cells['weight']?.value ?? 0;
+      grandTotal += row.cells['total']?.value ?? 0;
     }
 
     return Row(
@@ -76,81 +73,40 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
     );
   }
 
-  // void extractBillItemsFromGrid() {
-  //   if (stateManager == null) return;
-  //
-  //   final billItems =
-  //       stateManager!.rows.map((row) {
-  //         return BillItemEntity(
-  //           name: row.cells['price3']?.value?.toString() ?? '',
-  //           price: (row.cells['price']?.value as num?)?.toDouble() ?? 0.0,
-  //           weight: (row.cells['price1']?.value as num?)?.toDouble() ?? 0.0,
-  //           count: row.cells['price2']?.value as int? ?? 0,
-  //           total: (row.cells['price4']?.value as num?)?.toDouble() ?? 0.0,
-  //           type: row.cells['type']?.value?.toString() ?? '',
-  //         );
-  //       }).toList();
-  //
-  //   print('Collected ${billItems.length} items:');
-  //   for (final item in billItems) {
-  //     print('${item.name} | ${item.price} | ${item.total}');
-  //   }
-  //   var input = PurchaseEntity(
-  //     bill: billItems,
-  //     buyer: controller.text,
-  //     total: 0,
-  //   );
-  //   FruitShopDatabase.insertPurchase(input);
-  //   // Now you can use `billItems` to create a new PurchaseEntity and insert it to the DB
-  // }
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        SizedBox(height: 16.h),
-        Container(
-          height: 50.h,
-          padding: EdgeInsets.symmetric(horizontal: 8.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
-          ),
-          width: MediaQuery.of(context).size.width * 0.43,
-          child: Column(
-            children: [
-              Text("زسكر  للخضراواتفا "),
-              SizedBox(
-                height: 30.h,
-                child: AppField(
-                  controller: controller,
-                  canEdit: widget.canEdit,
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+      width: MediaQuery.of(context).size.width * 0.43,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 8.h),
+            child: Column(
+              children: [
+                Text(
+                  "زسكر للخضراوات",
+                  style: TextStyle(color: Colors.black, fontSize: 16.sp),
                 ),
-              ),
-            ],
+                SizedBox(
+                  height: 30.h,
+                  child: AppField(
+                    controller: controller,
+                    canEdit: widget.canEdit,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        Container(
-          color: Colors.white,
-          width: MediaQuery.of(context).size.width * 0.43,
-          height: calculateGridHeight(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
+          Container(
+            color: Colors.white,
+            height: calculateGridHeight(),
             child: PlutoGrid(
-              // createHeader: (stateManager) {
-              //   return Column(
-              //     children: [
-              //       Text("زسكر  للخضراواتفا "),
-              //       SizedBox(
-              //         height: 20.h,
-              //         child: AppField(controller: controller),
-              //       ),
-              //     ],
-              //   );
-              // },
               configuration: PlutoGridConfiguration(
                 columnFilter: PlutoGridColumnFilterConfig(),
                 localeText: PlutoGridLocaleText(autoFitColumn: "تعبئة تلقائية"),
@@ -173,7 +129,6 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
               rows: widget.rows,
               onLoaded: (event) => stateManager = event.stateManager,
               onChanged: (event) => setState(() => updateRowTotal(event.row)),
-
               createFooter:
                   (_) => Padding(
                     padding: EdgeInsets.symmetric(vertical: 4.h),
@@ -204,8 +159,44 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
                   ),
             ),
           ),
-        ),
-      ],
+          Padding(
+            padding: EdgeInsets.only(top: 12.h),
+            child: Text(
+              "الاجمالي الكلي: ${widget.data?.total ?? 0}",
+              style: TextStyle(fontSize: 6.sp),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  void extractBillItemsFromGrid() {
+    if (stateManager == null) return;
+
+    final billItems =
+        stateManager!.rows.map((row) {
+          return BillItemEntity(
+            customerName: row.cells['customer']?.value?.toString() ?? '',
+            price: (row.cells['price']?.value as num?)?.toDouble() ?? 0.0,
+            weight: (row.cells['weight']?.value as num?)?.toDouble() ?? 0.0,
+            count: row.cells['count']?.value as int? ?? 0,
+            total: (row.cells['item_total']?.value as num?)?.toDouble() ?? 0.0,
+            type: row.cells['type']?.value?.toString() ?? '',
+            fruitName: '',
+          );
+        }).toList();
+
+    print('Collected ${billItems.length} items:');
+    for (final item in billItems) {
+      print('${item.customerName} | ${item.price} | ${item.total}');
+    }
+    var input = PurchaseEntity(
+      bill: billItems,
+      ownerName: controller.text,
+      total: 0,
+    );
+    FruitShopDatabase.insertSupplierPurchase(input);
+    // Now you can use `billItems` to create a new PurchaseEntity and insert it to the DB
   }
 }

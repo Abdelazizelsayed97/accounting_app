@@ -11,25 +11,28 @@ void main() async {
       price: 2500,
       weight: 134,
       count: 6,
-      name: "mohamed",
+      customerName: "mohamed",
       total: 14900,
       type: "mango",
+      fruitName: "mango",
     ),
     BillItemEntity(
       price: 10020,
       weight: 1334,
       count: 6,
-      name: "ahmed",
+      customerName: "ahmed",
       total: 149001,
       type: "mango",
+      fruitName: "mango",
     ),
     BillItemEntity(
       price: 1234,
       weight: 45,
       count: 7,
-      name: "ali",
+      customerName: "ali",
       total: 45678,
       type: "mango",
+      fruitName: "mango",
     ),
   ];
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,18 +52,17 @@ void main() async {
     await windowManager.focus();
   });
   // FruitShopDatabase.dede();
-  // final buyerId = await FruitShopDatabase.insertBuyer("Ali");
-  // final fruitId = await FruitShopDatabase.insertFruit("Apple", 3.5);
-  // print('Buyer ID: $buyerId');
-  // print('Buyer ID: $fruitId');
-  await FruitShopDatabase.insertPurchase(
-    PurchaseEntity(bill: xx, buyer: "Ali", total: 1000),
+
+  await FruitShopDatabase.getPurchasesByDate(DateTime(2025, 5, 14));
+  var zz = await FruitShopDatabase.getAllFruits();
+  print('zzzzzzzzzzzzz ${zz}');
+  var result = await FruitShopDatabase.insertSupplierPurchase(
+    PurchaseEntity(bill: xx, ownerName: "Ali", total: 1000),
   );
+  await FruitShopDatabase.insertBuyerPurchase(
+    PurchaseEntity(bill: xx, ownerName: "karim", total: 1000),
+  );
+  print('result = $result');
 
-  final result1 = await FruitShopDatabase.searchPurchases("Ali");
-  print("Search by buyer:\n$result1");
-
-  final result2 = await FruitShopDatabase.searchPurchases("Apple");
-  print("Search by fruit:\n$result2");
   runApp(MyApp());
 }

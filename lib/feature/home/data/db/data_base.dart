@@ -16,27 +16,16 @@ class FruitShopDatabase {
     _database = await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute(
+              'ALTER TABLE bill_items ADD COLUMN buyer_id INTEGER REFERENCES buyers(id)',
+            );
+          }
+        },
+
         version: 1,
         onCreate: (db, version) async {
-          // Create tables here
-          await db.execute('''
-              CREATE TABLE buyers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-              );
-            ''');
-
-          // Create fruits table
-          await db.execute('''
-              CREATE TABLE fruits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE,
-                price_per_kg REAL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-              );
-            ''');
           await db.execute('''
           CREATE TABLE IF NOT EXISTS daily_operations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,33 +42,79 @@ class FruitShopDatabase {
             date TEXT NOT NULL
           )
         ''');
-          // Create purchases table
           await db.execute('''
-CREATE TABLE purchases (
+CREATE TABLE suppliers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  buyer_id INTEGER,
-  total_amount REAL,
+  name TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+          ''');
+          await db.execute('''
+CREATE TABLE buyers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+''');
+
+          await db.execute('''
+CREATE TABLE fruits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+''');
+
+          await db.execute('''
+CREATE TABLE supplier_purchases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  supplier_id INTEGER NOT NULL,
+  total_amount REAL NOT NULL,
   date TEXT DEFAULT CURRENT_TIMESTAMP,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  type TEXT DEFAULT 'fruits',
-  FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE
-)
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+);
 ''');
-          // create
-          // Create bill_items table
+
           await db.execute('''
-              CREATE TABLE bill_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                purchase_id INTEGER,
-                fruit_id INTEGER,
-                price REAL,
-                weight REAL,
-                count INTEGER,
-                total REAL,
-                FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
-                FOREIGN KEY (fruit_id) REFERENCES fruits(id) ON DELETE RESTRICT
-              );
-            ''');
+CREATE TABLE supplier_bill_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  purchase_id INTEGER NOT NULL,
+  fruit_id INTEGER NOT NULL,
+  buyer_id INTEGER NOT NULL,
+  price REAL NOT NULL,
+  weight REAL NOT NULL,
+  count INTEGER DEFAULT 0,
+  total REAL GENERATED ALWAYS AS (price * weight) STORED,
+  FOREIGN KEY (purchase_id) REFERENCES supplier_purchases(id) ON DELETE CASCADE,
+  FOREIGN KEY (fruit_id) REFERENCES fruits(id) ON DELETE RESTRICT
+  FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE RESTRICT
+);
+''');
+          await db.execute('''
+          CREATE TABLE buyer_purchases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  buyer_id INTEGER NOT NULL,
+  total_amount REAL NOT NULL,
+  date TEXT DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE
+);
+          ''');
+          await db.execute('''
+          CREATE TABLE buyer_bill_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  purchase_id INTEGER NOT NULL,
+  fruit_id INTEGER NOT NULL,
+  price REAL NOT NULL,
+  weight REAL NOT NULL,
+  count INTEGER DEFAULT 0,
+  total REAL GENERATED ALWAYS AS (price * weight) STORED,
+  FOREIGN KEY (purchase_id) REFERENCES buyer_purchases(id) ON DELETE CASCADE,
+  FOREIGN KEY (fruit_id) REFERENCES fruits(id) ON DELETE RESTRICT
+);
+          ''');
 
           // Create daily_finances table
           await db.execute('''
@@ -94,20 +129,51 @@ CREATE TABLE purchases (
             ''');
 
           // Create indexes for faster searches
+          // Add `buyer_id` column to `bill_items` if not already present
+          // Only run this if bill_items was created before buyer_id was added
+
+          // Create indexes (safe from duplication)
           await db.execute(
-            'CREATE INDEX idx_purchases_date ON purchases(date);',
+            'CREATE INDEX IF NOT EXISTS idx_supplier_purchases_date ON supplier_purchases(date);',
           );
           await db.execute(
-            'CREATE INDEX idx_purchases_buyer_id ON purchases(buyer_id);',
+            'CREATE INDEX IF NOT EXISTS idx_supplier_purchases_supplier_id ON supplier_purchases(supplier_id);',
+          );
+
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_buyer_purchases_date ON buyer_purchases(date);',
           );
           await db.execute(
-            'CREATE INDEX idx_bill_items_purchase_id ON bill_items(purchase_id);',
+            'CREATE INDEX IF NOT EXISTS idx_buyer_purchases_buyer_id ON buyer_purchases(buyer_id);',
+          );
+
+          // Indexes for supplier_bill_items
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_supplier_bill_items_purchase_id ON supplier_bill_items(purchase_id);',
           );
           await db.execute(
-            'CREATE INDEX idx_bill_items_fruit_id ON bill_items(fruit_id);',
+            'CREATE INDEX IF NOT EXISTS idx_supplier_bill_items_fruit_id ON supplier_bill_items(fruit_id);',
+          );
+
+          // Indexes for buyer_bill_items
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_buyer_bill_items_purchase_id ON buyer_bill_items(purchase_id);',
           );
           await db.execute(
-            'CREATE INDEX idx_daily_finances_date ON daily_finances(date);',
+            'CREATE INDEX IF NOT EXISTS idx_buyer_bill_items_fruit_id ON buyer_bill_items(fruit_id);',
+          );
+
+          // Buyer and Supplier indexes
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name);',
+          );
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_buyers_name ON buyers(name);',
+          );
+
+          // Finance tracking
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_daily_finances_date ON daily_finances(date);',
           );
         },
       ),
@@ -115,30 +181,59 @@ CREATE TABLE purchases (
   }
 
   // Purchase operations
-  static Future<int> insertPurchase(PurchaseEntity purchase) async {
+  static Future<int> insertSupplierPurchase(PurchaseEntity purchase) async {
     final db = await database;
-    final batch = db.batch();
 
-    // 1. Insert the purchase header
-    final purchaseId = await db.insert('purchases', {
-      'buyer_id': await _getBuyerId(purchase.buyer),
+    // 1. Insert the supplier purchase header
+    final supplierId = await _getSupplierId(purchase.ownerName);
+    final purchaseId = await db.insert('supplier_purchases', {
+      'supplier_id': supplierId,
       'total_amount': purchase.total,
     });
 
-    // 2. Insert all bill items
+    // 2. Insert bill items
     for (final item in purchase.bill) {
-      final fruitId = await _getFruitId(item.name);
-      await db.insert('bill_items', {
+      final fruitId = await _getFruitId(item.fruitName);
+      final buyerId = await _getBuyerId(item.customerName);
+      await db.insert('supplier_bill_items', {
         'purchase_id': purchaseId,
         'fruit_id': fruitId,
         'price': item.price,
         'weight': item.weight,
         'count': item.count,
-        'total': item.total,
+        'buyer_id': buyerId,
       });
     }
 
-    // 3. Update daily gained money
+    // 3. Optionally update any daily report
+    await _updateDailyGainedMoney(DateTime.now(), purchase.total.toDouble());
+
+    return purchaseId;
+  }
+
+  static Future<int> insertBuyerPurchase(PurchaseEntity purchase) async {
+    final db = await database;
+
+    // 1. Insert the buyer purchase header
+    final buyerId = await _getBuyerId(purchase.ownerName);
+    final purchaseId = await db.insert('buyer_purchases', {
+      'buyer_id': buyerId,
+      'total_amount': purchase.total,
+    });
+
+    // 2. Insert bill items
+    for (final item in purchase.bill) {
+      final fruitId = await _getFruitId(item.fruitName);
+      await db.insert('buyer_bill_items', {
+        'purchase_id': purchaseId,
+        'fruit_id': fruitId,
+        'price': item.price,
+        'weight': item.weight,
+        'count': item.count,
+      });
+    }
+
+    // 3. Optionally update any daily report
     await _updateDailyGainedMoney(DateTime.now(), purchase.total.toDouble());
 
     return purchaseId;
@@ -171,35 +266,10 @@ CREATE TABLE purchases (
   }
 
   // Fruit operations
-  static Future<int> insertFruit(String name, double pricePerKg) async {
+  static Future<int> insertFruit(String name) async {
     final db = await database;
 
-    // Check if the fruit already exists
-    final existingFruit = await db.query(
-      'fruits',
-      where: 'name = ?',
-      whereArgs: [name],
-    );
-
-    if (existingFruit.isNotEmpty) {
-      // If fruit exists, update its price (or any other field like stock/amount)
-      final fruitId = existingFruit.first['id'] as int;
-      await db.update(
-        'fruits',
-        {
-          'price_per_kg': pricePerKg, // or another field to update
-        },
-        where: 'id = ?',
-        whereArgs: [fruitId],
-      );
-      return fruitId; // Return the ID of the existing fruit
-    } else {
-      // Insert new fruit if it doesn't exist
-      return await db.insert('fruits', {
-        'name': name,
-        'price_per_kg': pricePerKg,
-      });
-    }
+    return await db.insert('fruits', {'name': name});
   }
 
   static Future<List<Map<String, dynamic>>> getAllFruits() async {
@@ -216,11 +286,33 @@ CREATE TABLE purchases (
     );
 
     if (buyers.isNotEmpty) {
+      print('found buyer');
       return buyers.first['id'] as int;
     } else {
       // Create the buyer if not exists
       return await insertBuyer(buyerName);
     }
+  }
+
+  static Future<int> _getSupplierId(String buyerName) async {
+    final db = await database;
+    final suppliers = await db.query(
+      'suppliers',
+      where: 'name = ?',
+      whereArgs: [buyerName],
+    );
+
+    if (suppliers.isNotEmpty) {
+      return suppliers.first['id'] as int;
+    } else {
+      return await insertSupplier(buyerName);
+    }
+  }
+
+  // Buyer operations
+  static Future<int> insertSupplier(String name) async {
+    final db = await database;
+    return await db.insert('suppliers', {'name': name});
   }
 
   static Future<int> _getFruitId(String fruitName) async {
@@ -234,8 +326,7 @@ CREATE TABLE purchases (
     if (fruits.isNotEmpty) {
       return fruits.first['id'] as int;
     } else {
-      // Returning -1 if fruit doesn't exist (you should handle this case)
-      return -1;
+      return insertFruit(fruitName);
     }
   }
 
@@ -368,26 +459,66 @@ CREATE TABLE purchases (
   }
 
   // Query operations
-  static Future<List<Map<String, dynamic>>> getAllPurchasesWithItems() async {
+  static Future<List<Map<String, dynamic>>>
+  getAllSuppliersPurchasesWithItems() async {
     final db = await database;
     return await db.rawQuery('''
-    SELECT 
-      p.id AS purchase_id,
-      p.date,
-      p.total_amount,
+    SELECT
+      sp.id AS purchase_id,
+      sp.date,
+      sp.total_amount,
+
+      s.id AS supplier_id,
+      COALESCE(s.name, '') AS supplier_name,
+
+      sbi.id AS bill_item_id,
+      f.id AS fruit_id,
+      f.name AS fruit_name,
+      b.id AS buyer_id,
+      b.name AS buyer_name,
+
+      sbi.price AS item_price,
+      sbi.weight AS item_weight,
+      sbi.count AS item_count,
+      sbi.total AS item_total
+
+    FROM supplier_purchases sp
+      JOIN suppliers s ON sp.supplier_id = s.id
+      LEFT JOIN supplier_bill_items sbi ON sbi.purchase_id = sp.id
+      LEFT JOIN fruits f ON f.id = sbi.fruit_id
+      LEFT JOIN buyers b ON b.id = sbi.buyer_id
+
+    ORDER BY sp.date DESC, sbi.id ASC;
+  ''');
+  }
+
+  static Future<List<Map<String, dynamic>>>
+  getAllBuyerPurchasesWithItems() async {
+    final db = await database;
+    return await db.rawQuery('''
+    SELECT
+      bp.id AS purchase_id,
+      bp.date,
+      bp.total_amount,
+
+      b.id AS buyer_id,
       COALESCE(b.name, '') AS buyer_name,
-      f.name AS item_name,
-      bi.price AS item_price,
-      bi.weight AS item_weight,
-      bi.count AS item_count,
-      bi.total AS item_total
 
-    FROM purchases p
-    JOIN buyers b ON p.buyer_id = b.id
-    LEFT JOIN bill_items bi ON bi.purchase_id = p.id
-    LEFT JOIN fruits f ON f.id = bi.fruit_id
+      bbi.id AS bill_item_id,
+      f.id AS fruit_id,
+      f.name AS fruit_name,
 
-    ORDER BY p.date DESC, bi.id ASC
+      bbi.price AS item_price,
+      bbi.weight AS item_weight,
+      bbi.count AS item_count,
+      bbi.total AS item_total
+
+    FROM buyer_purchases bp
+      JOIN buyers b ON bp.buyer_id = b.id
+      LEFT JOIN buyer_bill_items bbi ON bbi.purchase_id = bp.id
+      LEFT JOIN fruits f ON f.id = bbi.fruit_id
+
+    ORDER BY bp.date DESC, bbi.id ASC;
   ''');
   }
 
@@ -399,11 +530,15 @@ CREATE TABLE purchases (
 
     return await db.rawQuery(
       '''
-      SELECT p.id, p.date, p.total_amount, b.name as buyer_name
-      FROM purchases p
-      JOIN buyers b ON p.buyer_id = b.id
-      WHERE date(p.date) = date(?)
-      ORDER BY p.id DESC
+    SELECT 
+      p.id, 
+      p.date, 
+      p.total_amount, 
+      s.name AS supplier_name
+    FROM supplier_purchases p
+    JOIN suppliers s ON p.supplier_id = s.id
+    WHERE date(p.date) = date(?)
+    ORDER BY p.id DESC
     ''',
       [dateStr],
     );
@@ -420,7 +555,7 @@ CREATE TABLE purchases (
     return await db.rawQuery(
       '''
       SELECT p.id, p.date, p.total_amount, b.name as buyer_name
-      FROM purchases p
+      FROM supplier_purchases p
       JOIN buyers b ON p.buyer_id = b.id
       WHERE date(p.date) BETWEEN date(?) AND date(?)
       ORDER BY p.date DESC
@@ -436,7 +571,7 @@ CREATE TABLE purchases (
     return await db.rawQuery(
       '''
       SELECT p.id, p.date, p.total_amount, b.name as buyer_name
-      FROM purchases p
+      FROM supplier_purchases p
       JOIN buyers b ON p.buyer_id = b.id
       WHERE b.name LIKE ?
       ORDER BY p.date DESC
@@ -452,7 +587,7 @@ CREATE TABLE purchases (
     return await db.rawQuery(
       '''
       SELECT DISTINCT p.id, p.date, p.total_amount, b.name as buyer_name
-      FROM purchases p
+      FROM supplier_purchases p
       JOIN buyers b ON p.buyer_id = b.id
       JOIN bill_items bi ON bi.purchase_id = p.id
       JOIN fruits f ON bi.fruit_id = f.id
@@ -460,26 +595,6 @@ CREATE TABLE purchases (
       ORDER BY p.date DESC
     ''',
       ['%$fruitName%'],
-    );
-  }
-
-  static Future<List<Map<String, dynamic>>> searchPurchases(
-    String query,
-  ) async {
-    final db = await database;
-    return await db.rawQuery(
-      '''
-      SELECT DISTINCT p.id, p.date, p.total_amount, b.name as buyer_name
-      FROM purchases p
-      JOIN buyers b ON p.buyer_id = b.id
-      LEFT JOIN bill_items bi ON bi.purchase_id = p.id
-      LEFT JOIN fruits f ON bi.fruit_id = f.id
-      WHERE b.name LIKE ?
-         OR f.name LIKE ?
-         OR p.total_amount LIKE ?
-      ORDER BY p.date DESC
-    ''',
-      ['%$query%', '%$query%', '%$query%'],
     );
   }
 
@@ -503,7 +618,7 @@ CREATE TABLE purchases (
 
     // Get purchase info
     final purchases = await db.query(
-      'purchases',
+      'supplier_purchases',
       where: 'id = ?',
       whereArgs: [purchaseId],
     );
@@ -513,16 +628,20 @@ CREATE TABLE purchases (
     }
 
     final purchase = purchases.first;
-    final buyerId = purchase['buyer_id'] as int;
+    final buyerId = purchase['buyer_id'] as int?;
 
     // Get buyer info
-    final buyers = await db.query(
-      'buyers',
-      where: 'id = ?',
-      whereArgs: [buyerId],
-    );
-
-    final buyerName = buyers.first['name'] as String;
+    String buyerName = 'غير معروف';
+    if (buyerId != null) {
+      final buyers = await db.query(
+        'buyers',
+        where: 'id = ?',
+        whereArgs: [buyerId],
+      );
+      if (buyers.isNotEmpty) {
+        buyerName = buyers.first['name'] as String;
+      }
+    }
 
     // Get bill items
     final billItemsData = await getPurchaseDetails(purchaseId);
@@ -530,20 +649,21 @@ CREATE TABLE purchases (
         billItemsData
             .map(
               (item) => BillItemEntity(
-                price: item['price'] as double,
-                weight: item['weight'] as double,
-                count: item['count'] as int,
-                name: item['name'] as String,
-                total: item['total'] as double,
-                type: item['type'] as String,
+                price: (item['price'] as num?)?.toDouble() ?? 0.0,
+                weight: (item['weight'] as num?)?.toDouble() ?? 0.0,
+                count: item['count'] as int? ?? 0,
+                customerName: item['name'] as String? ?? '',
+                total: (item['total'] as num?)?.toDouble() ?? 0.0,
+                type: item['type'] as String? ?? '',
+                fruitName: item["item_name"] as String,
               ),
             )
             .toList();
 
     return PurchaseEntity(
       bill: billItems,
-      buyer: buyerName,
-      total: purchase['total_amount'] as double,
+      ownerName: buyerName,
+      total: (purchase['total_amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -576,120 +696,6 @@ CREATE TABLE purchases (
     }
 
     return buyers.first;
-  }
-
-  // Get sales statistics
-  static Future<Map<String, dynamic>> getSalesStatistics({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    final db = await database;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final start = startDate ?? DateTime(today.year, today.month, 1);
-    final end = endDate ?? DateTime(today.year, today.month + 1, 0);
-
-    final startDateStr = _formatDate(start);
-    final endDateStr = _formatDate(end);
-
-    // Get total sales in date range
-    final salesResult = await db.rawQuery(
-      '''
-      SELECT
-        COUNT(*) as total_sales,
-        SUM(total_amount) as total_revenue,
-        AVG(total_amount) as average_sale
-      FROM purchases
-      WHERE date(date) BETWEEN date(?) AND date(?)
-    ''',
-      [startDateStr, endDateStr],
-    );
-
-    // Get top fruits by sales
-    final topFruitsResult = await db.rawQuery(
-      '''
-      SELECT
-        f.name,
-        SUM(bi.total) as total_sales,
-        SUM(bi.weight) as total_weight
-      FROM bill_items bi
-      JOIN fruits f ON bi.fruit_id = f.id
-      JOIN purchases p ON bi.purchase_id = p.id
-      WHERE date(p.date) BETWEEN date(?) AND date(?)
-      GROUP BY f.id
-      ORDER BY total_sales DESC
-      LIMIT 5
-    ''',
-      [startDateStr, endDateStr],
-    );
-
-    // Get top buyers
-    final topBuyersResult = await db.rawQuery(
-      '''
-      SELECT
-        b.name,
-        COUNT(p.id) as purchase_count,
-        SUM(p.total_amount) as total_spent
-      FROM purchases p
-      JOIN buyers b ON p.buyer_id = b.id
-      WHERE date(p.date) BETWEEN date(?) AND date(?)
-      GROUP BY b.id
-      ORDER BY total_spent DESC
-      LIMIT 5
-    ''',
-      [startDateStr, endDateStr],
-    );
-
-    // Calculate profits
-    final financesResult = await db.rawQuery(
-      '''
-      SELECT
-        SUM(gained_money) as total_gained,
-        SUM(spent_money) as total_spent
-      FROM daily_finances
-      WHERE date(date) BETWEEN date(?) AND date(?)
-    ''',
-      [startDateStr, endDateStr],
-    );
-
-    return {
-      'period': {'start': startDateStr, 'end': endDateStr},
-      'sales':
-          salesResult.isNotEmpty
-              ? salesResult.first
-              : {'total_sales': 0, 'total_revenue': 0, 'average_sale': 0},
-      'top_fruits': topFruitsResult,
-      'top_buyers': topBuyersResult,
-      'finances':
-          financesResult.isNotEmpty
-              ? financesResult.first
-              : {'total_gained': 0, 'total_spent': 0},
-    };
-  }
-
-  // Get financial report by date range
-  static Future<List<Map<String, dynamic>>> getFinancialReport(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    final db = await database;
-    final startDateStr = _formatDate(startDate);
-    final endDateStr = _formatDate(endDate);
-
-    return await db.rawQuery(
-      '''
-      SELECT
-        date,
-        gained_money,
-        spent_money,
-        (gained_money - spent_money) as net_profit
-      FROM daily_finances
-      WHERE date(date) BETWEEN date(?) AND date(?)
-      ORDER BY date
-    ''',
-      [startDateStr, endDateStr],
-    );
   }
 
   // Delete purchase and related bill items

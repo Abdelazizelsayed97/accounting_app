@@ -11,9 +11,10 @@ class AppField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      cursorHeight: 12.h,
+      cursorHeight: 14.h,
       cursorColor: Colors.black,
-      style: TextStyle(fontSize: 10.sp),
+
+      style: TextStyle(fontSize: 10.sp, color: Colors.black),
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),

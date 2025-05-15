@@ -30,30 +30,95 @@ class _PurchasesPageState extends State<PurchasesPage> {
         field: 'price',
         type: PlutoColumnType.number(),
         textAlign: PlutoColumnTextAlign.center,
+        enableFilterMenuItem: false,
+        enableColumnDrag: false,
+        enableContextMenu: false,
+        enableAutoEditing: false,
+        enableDropToResize: false,
+        enableHideColumnMenuItem: false,
+        enableSetColumnsMenuItem: false,
+        enableSorting: false,
+        enableEditingMode: false,
+        enableRowDrag: false,
+        enableRowChecked: false,
+        filterPadding: EdgeInsets.zero,
+        titleTextAlign: PlutoColumnTextAlign.center,
       ),
       PlutoColumn(
         title: "الوزن",
         field: 'price1',
         type: PlutoColumnType.number(),
         textAlign: PlutoColumnTextAlign.center,
+        enableFilterMenuItem: false,
+        enableColumnDrag: false,
+        enableContextMenu: false,
+        enableAutoEditing: false,
+        enableDropToResize: false,
+        enableHideColumnMenuItem: false,
+        enableSetColumnsMenuItem: false,
+        enableSorting: false,
+        enableEditingMode: false,
+        enableRowDrag: false,
+        enableRowChecked: false,
+        filterPadding: EdgeInsets.zero,
+        titleTextAlign: PlutoColumnTextAlign.center,
       ),
       PlutoColumn(
         title: "العدد",
         field: 'price2',
         type: PlutoColumnType.number(),
         textAlign: PlutoColumnTextAlign.center,
+        enableFilterMenuItem: false,
+        enableColumnDrag: false,
+        enableContextMenu: false,
+        enableAutoEditing: false,
+        enableDropToResize: false,
+        enableHideColumnMenuItem: false,
+        enableSetColumnsMenuItem: false,
+        enableSorting: false,
+        enableEditingMode: false,
+        enableRowDrag: false,
+        enableRowChecked: false,
+        filterPadding: EdgeInsets.zero,
+        titleTextAlign: PlutoColumnTextAlign.center,
       ),
       PlutoColumn(
         title: "الصنف",
         field: 'type',
         type: PlutoColumnType.text(),
         textAlign: PlutoColumnTextAlign.center,
+        enableFilterMenuItem: false,
+        enableColumnDrag: false,
+        enableContextMenu: false,
+        enableAutoEditing: false,
+        enableDropToResize: false,
+        enableHideColumnMenuItem: false,
+        enableSetColumnsMenuItem: false,
+        enableSorting: false,
+        enableEditingMode: false,
+        enableRowDrag: false,
+        enableRowChecked: false,
+        filterPadding: EdgeInsets.zero,
+        titleTextAlign: PlutoColumnTextAlign.center,
       ),
       PlutoColumn(
         title: "الاجمالي",
         field: 'price4',
         type: PlutoColumnType.number(),
         textAlign: PlutoColumnTextAlign.center,
+        enableFilterMenuItem: false,
+        enableColumnDrag: false,
+        enableContextMenu: false,
+        enableAutoEditing: false,
+        enableDropToResize: false,
+        enableHideColumnMenuItem: false,
+        enableSetColumnsMenuItem: false,
+        enableSorting: false,
+        enableEditingMode: false,
+        enableRowDrag: false,
+        enableRowChecked: false,
+        filterPadding: EdgeInsets.zero,
+        titleTextAlign: PlutoColumnTextAlign.center,
       ),
     ];
 
@@ -63,13 +128,13 @@ class _PurchasesPageState extends State<PurchasesPage> {
   }
 
   Future<void> _loadPurchases() async {
-    final rawRows = await FruitShopDatabase.getAllPurchasesWithItems();
+    final rawRows = await FruitShopDatabase.getAllBuyerPurchasesWithItems();
 
-    print('rawRows count: ${rawRows.length}');
+    print('rawRows count: ${rawRows}');
     final Map<int, PurchaseEntity> groupedPurchases = {};
 
     for (final row in rawRows) {
-      print('Row: $row');
+      // print('Row: $row');
 
       final int? purchaseId = row['purchase_id'] as int?;
       if (purchaseId == null) continue;
@@ -77,17 +142,21 @@ class _PurchasesPageState extends State<PurchasesPage> {
       if (!groupedPurchases.containsKey(purchaseId)) {
         groupedPurchases[purchaseId] = PurchaseEntity(
           bill: [],
-          buyer: row['buyer_name']?.toString() ?? '',
+          ownerName: row['buyer_name']?.toString() ?? '',
           total: (row['total_amount'] as num?)?.toDouble() ?? 0.0,
         );
       }
-
       final item = BillItemEntity(
-        name: row['item_name']?.toString() ?? '',
+        customerName:
+            row['buyer_name']?.toString() ??
+            '', // The customer who bought the fruit
+        fruitName: row['fruit_name']?.toString() ?? '', // The fruit name
         price: (row['item_price'] as num?)?.toDouble() ?? 0.0,
         weight: (row['item_weight'] as num?)?.toDouble() ?? 0.0,
         count: (row['item_count'] as int?) ?? 0,
-        type: row['fruit_name']?.toString() ?? '',
+        type:
+            row['type']?.toString() ??
+            '', // Optional: if you store category/type
         total: (row['item_total'] as num?)?.toDouble() ?? 0.0,
       );
 
@@ -97,7 +166,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
     purchases = groupedPurchases.values.toList();
 
     if (purchases.isNotEmpty && purchases.first.bill.isNotEmpty) {
-      print('First item name: |${purchases.first.bill.first.name}|');
+      print('First item name: |${purchases.first.bill.first.customerName}|');
     } else {
       print('No purchases or bill items found.');
     }
@@ -166,14 +235,15 @@ class _PurchasesPageState extends State<PurchasesPage> {
 
   List<PlutoRow> buildPlutoRowsFromPurchase(PurchaseEntity purchase) {
     return purchase.bill.map((item) {
+      print('Item: ${item.customerName} | ${item.price} | ${item.total}');
       return PlutoRow(
         cells: {
           'price': PlutoCell(value: item.price),
           'price1': PlutoCell(value: item.weight),
           'price2': PlutoCell(value: item.count),
-          'price3': PlutoCell(value: item.name),
+          'price3': PlutoCell(value: purchase.ownerName),
           'price4': PlutoCell(value: item.total),
-          'type': PlutoCell(value: item.type),
+          'type': PlutoCell(value: item.fruitName),
         },
       );
     }).toList();

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../widgets/gradient_app_bar.dart';
+import 'credits_page.dart';
 import 'daily_opration_page.dart';
 import 'imports_page.dart';
 
@@ -22,7 +23,11 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: GradientAppBar(context: context, title: "Home", hasPop: false),
+      appBar: GradientAppBar(
+        context: context,
+        title: "الرئيسيه",
+        hasPop: false,
+      ),
       body: BackGroundWidget(
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
@@ -57,11 +62,11 @@ class HomePage extends StatelessWidget {
                           child: IconButton(
                             onPressed: () {
                               if (index == 0) {
-                                navigateTo(context, ImportsPage());
-                              } else if (index == 1) {
                                 navigateTo(context, PurchasesPage());
+                              } else if (index == 1) {
+                                navigateTo(context, ImportsPage());
                               } else if (index == 2) {
-                                // Navigate to another page
+                                navigateTo(context, CreditsPage());
                               } else if (index == 3) {
                                 navigateTo(context, DailyOperationWidget());
                               } else if (index == 4) {
