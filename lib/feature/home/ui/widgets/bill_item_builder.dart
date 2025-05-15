@@ -32,6 +32,7 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
   PlutoGridStateManager? stateManager;
 
   double get rowHeight => 20.h;
+
   double get headerHeight => 20.h;
 
   double calculateGridHeight() {
@@ -43,6 +44,14 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
     final weight = row.cells['weight']?.value ?? 0;
     row.cells['total']?.value = (price * weight).toDouble();
     stateManager?.notifyListeners();
+  }
+
+  void addNewRow() {
+    final newRow = stateManager?.getNewRow();
+    if (newRow != null) {
+      stateManager?.appendRows([newRow]);
+    }
+    setState(() {});
   }
 
   @override
@@ -95,9 +104,31 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
                 ),
                 SizedBox(
                   height: 30.h,
-                  child: AppField(
-                    controller: controller,
-                    canEdit: widget.canEdit,
+                  child: Row(
+                    children: [
+                      if (widget.canEdit) ...[
+                        GestureDetector(
+                          onTap: () {
+                            extractBillItemsFromGrid();
+                            setState(() {});
+                          },
+                          child: Text(
+                            "حفظ",
+                            style: TextStyle(
+                              fontSize: 8.sp,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                      SizedBox(width: 8.w),
+                      Flexible(
+                        child: AppField(
+                          controller: controller,
+                          canEdit: widget.canEdit,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -129,29 +160,31 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
               rows: widget.rows,
               onLoaded: (event) => stateManager = event.stateManager,
               onChanged: (event) => setState(() => updateRowTotal(event.row)),
+
               createFooter:
                   (_) => Padding(
                     padding: EdgeInsets.symmetric(vertical: 4.h),
                     child: Column(
                       children: [
-                        GestureDetector(
-                          onTap: widget.onAddRow,
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: AppColors.gradientList,
+                        if (widget.canEdit)
+                          GestureDetector(
+                            onTap: addNewRow,
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: AppColors.gradientList,
+                                ),
+                                borderRadius: BorderRadius.circular(30.r),
                               ),
-                              borderRadius: BorderRadius.circular(30.r),
-                            ),
-                            height: 20.h,
-                            width: 100.w,
-                            child: Text(
-                              "إضافة صف جديد",
-                              style: TextStyle(fontSize: 8.sp),
+                              height: 20.h,
+                              width: 100.w,
+                              child: Text(
+                                "إضافة صف جديد",
+                                style: TextStyle(fontSize: 8.sp),
+                              ),
                             ),
                           ),
-                        ),
                         SizedBox(height: 4.h),
                         buildFooterSums(),
                       ],
@@ -161,9 +194,21 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
           ),
           Padding(
             padding: EdgeInsets.only(top: 12.h),
-            child: Text(
-              "الاجمالي الكلي: ${widget.data?.total ?? 0}",
-              style: TextStyle(fontSize: 6.sp),
+            child: Row(
+              children: [
+                Text(
+                  "الاجمالي الكلي: ${widget.data?.total ?? 0}",
+                  style: TextStyle(fontSize: 6.sp),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  style: ButtonStyle(),
+                  child: Text(
+                    "تعديل",
+                    style: TextStyle(fontSize: 8.sp, color: Colors.cyan),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -183,7 +228,7 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
             count: row.cells['count']?.value as int? ?? 0,
             total: (row.cells['item_total']?.value as num?)?.toDouble() ?? 0.0,
             type: row.cells['type']?.value?.toString() ?? '',
-            fruitName: '',
+            fruitName: row.cells['type']?.value?.toString() ?? '',
           );
         }).toList();
 
@@ -196,7 +241,11 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
       ownerName: controller.text,
       total: 0,
     );
-    FruitShopDatabase.insertSupplierPurchase(input);
+    FruitShopDatabase.insertSupplierPurchase(input).then((value) {
+      setState(() {
+        stateManager?.rows.clear();
+      });
+    });
     // Now you can use `billItems` to create a new PurchaseEntity and insert it to the DB
   }
 }

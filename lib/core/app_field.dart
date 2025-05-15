@@ -13,8 +13,8 @@ class AppField extends StatelessWidget {
       controller: controller,
       cursorHeight: 14.h,
       cursorColor: Colors.black,
-
       style: TextStyle(fontSize: 10.sp, color: Colors.black),
+
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),

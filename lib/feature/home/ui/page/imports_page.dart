@@ -19,6 +19,7 @@ class _ImportsPageState extends State<ImportsPage> {
   late final List<PlutoColumn> columns;
   late List<PlutoRow> rows;
   List<PurchaseEntity> purchases = [];
+  PlutoGridStateManager? stateManager;
 
   @override
   void initState() {
@@ -27,7 +28,8 @@ class _ImportsPageState extends State<ImportsPage> {
     columns = [
       PlutoColumn(
         title: "المشتري",
-        field: 'customer', // instead of 'price3'
+        field: 'customer',
+        // instead of 'price3'
         type: PlutoColumnType.text(),
         enableFilterMenuItem: false,
         enableColumnDrag: false,
@@ -37,7 +39,7 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
         enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
@@ -57,9 +59,8 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
-        enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
         titleTextAlign: PlutoColumnTextAlign.center,
       ),
@@ -76,7 +77,7 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
         enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
@@ -95,7 +96,7 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
         enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
@@ -103,7 +104,8 @@ class _ImportsPageState extends State<ImportsPage> {
       ),
       PlutoColumn(
         title: "الصنف",
-        field: 'fruit', // instead of 'type'
+        field: 'fruit',
+        // instead of 'type'
         type: PlutoColumnType.text(),
         enableFilterMenuItem: false,
         enableColumnDrag: false,
@@ -113,7 +115,7 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
         enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
@@ -133,7 +135,7 @@ class _ImportsPageState extends State<ImportsPage> {
         enableHideColumnMenuItem: false,
         enableSetColumnsMenuItem: false,
         enableSorting: false,
-        enableEditingMode: false,
+
         enableRowDrag: false,
         enableRowChecked: false,
         filterPadding: EdgeInsets.zero,
@@ -168,16 +170,12 @@ class _ImportsPageState extends State<ImportsPage> {
         );
       }
       final item = BillItemEntity(
-        customerName:
-            row['buyer_name']?.toString() ??
-            '', // The customer who bought the fruit
-        fruitName: row['fruit_name']?.toString() ?? '', // The fruit name
+        customerName: row['buyer_name']?.toString() ?? '',
+        fruitName: row['fruit_name']?.toString() ?? '',
         price: (row['item_price'] as num?)?.toDouble() ?? 0.0,
         weight: (row['item_weight'] as num?)?.toDouble() ?? 0.0,
         count: (row['item_count'] as int?) ?? 0,
-        type:
-            row['type']?.toString() ??
-            '', // Optional: if you store category/type
+        type: row['type']?.toString() ?? '',
         total: (row['item_total'] as num?)?.toDouble() ?? 0.0,
       );
 
@@ -206,7 +204,10 @@ class _ImportsPageState extends State<ImportsPage> {
   );
 
   void addNewRow() {
-    rows.add(_emptyRow());
+    final newRow = stateManager?.getNewRow();
+    if (newRow != null) {
+      stateManager?.appendRows([newRow]);
+    }
     setState(() {});
   }
 
