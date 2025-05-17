@@ -13,24 +13,14 @@ class AppField extends StatelessWidget {
       controller: controller,
       cursorHeight: 14.h,
       cursorColor: Colors.black,
-      style: TextStyle(fontSize: 10.sp, color: Colors.black),
 
+      style: TextStyle(fontSize: 10.sp, color: Colors.black),
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
-          borderSide: BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
-          borderSide: BorderSide(color: Colors.grey, style: BorderStyle.solid),
-        ),
         filled: true,
         fillColor: Colors.white,
         enabled: canEdit,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
-          borderSide: BorderSide(color: Colors.grey, style: BorderStyle.solid),
-        ),
+        hintText: "----------------",
+        hintStyle: TextStyle(color: Colors.grey.shade300),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pluto_grid/pluto_grid.dart';
 
+import '../../../../core/columns.dart';
 import '../../data/db/data_base.dart';
 import '../widgets/bill_item_builder.dart';
 import 'home_page.dart';
@@ -16,7 +17,7 @@ class ImportsPage extends StatefulWidget {
 }
 
 class _ImportsPageState extends State<ImportsPage> {
-  late final List<PlutoColumn> columns;
+  late List<PlutoColumn> columns;
   late List<PlutoRow> rows;
   List<PurchaseEntity> purchases = [];
   PlutoGridStateManager? stateManager;
@@ -25,124 +26,7 @@ class _ImportsPageState extends State<ImportsPage> {
   void initState() {
     super.initState();
 
-    columns = [
-      PlutoColumn(
-        title: "المشتري",
-        field: 'customer',
-        // instead of 'price3'
-        type: PlutoColumnType.text(),
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-
-      PlutoColumn(
-        title: "السعر",
-        field: 'price',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الوزن",
-        field: 'weight',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "العدد",
-        field: 'count',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الصنف",
-        field: 'fruit',
-        // instead of 'type'
-        type: PlutoColumnType.text(),
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titlePadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الاجمالي",
-        field: 'total',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-    ];
-
+    columns = Columns.importsColumns;
     rows = [_emptyRow()];
 
     _loadPurchases().then((value) {

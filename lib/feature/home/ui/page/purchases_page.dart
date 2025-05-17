@@ -1,3 +1,4 @@
+import 'package:accounting_app/core/columns.dart';
 import 'package:accounting_app/feature/home/domain/entity/bill_entity.dart';
 import 'package:accounting_app/feature/home/ui/widgets/gradient_app_bar.dart';
 import 'package:flutter/material.dart';
@@ -24,98 +25,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
   void initState() {
     super.initState();
 
-    columns = [
-      PlutoColumn(
-        title: "السعر",
-        field: 'price',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الوزن",
-        field: 'price1',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "العدد",
-        field: 'price2',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الصنف",
-        field: 'type',
-        type: PlutoColumnType.text(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-      PlutoColumn(
-        title: "الاجمالي",
-        field: 'price4',
-        type: PlutoColumnType.number(),
-        textAlign: PlutoColumnTextAlign.center,
-        enableFilterMenuItem: false,
-        enableColumnDrag: false,
-        enableContextMenu: false,
-        enableAutoEditing: false,
-        enableDropToResize: false,
-        enableHideColumnMenuItem: false,
-        enableSetColumnsMenuItem: false,
-        enableSorting: false,
-        enableRowDrag: false,
-        enableRowChecked: false,
-        filterPadding: EdgeInsets.zero,
-        titleTextAlign: PlutoColumnTextAlign.center,
-      ),
-    ];
+    columns = Columns.purchasesColumns;
 
     rows = [_emptyRow()];
 
@@ -129,8 +39,6 @@ class _PurchasesPageState extends State<PurchasesPage> {
     final Map<int, PurchaseEntity> groupedPurchases = {};
 
     for (final row in rawRows) {
-      // print('Row: $row');
-
       final int? purchaseId = row['purchase_id'] as int?;
       if (purchaseId == null) continue;
 
@@ -142,9 +50,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
         );
       }
       final item = BillItemEntity(
-        customerName:
-            row['buyer_name']?.toString() ??
-            '', // The customer who bought the fruit
+        customerName: row['buyer_name']?.toString() ?? '',
         fruitName: row['fruit_name']?.toString() ?? '', // The fruit name
         price: (row['item_price'] as num?)?.toDouble() ?? 0.0,
         weight: (row['item_weight'] as num?)?.toDouble() ?? 0.0,

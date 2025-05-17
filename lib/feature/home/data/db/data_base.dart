@@ -43,14 +43,14 @@ class FruitShopDatabase {
           )
         ''');
           await db.execute('''
-CREATE TABLE suppliers (
+  CREATE TABLE suppliers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
           ''');
           await db.execute('''
-CREATE TABLE buyers (
+  CREATE TABLE buyers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -58,7 +58,7 @@ CREATE TABLE buyers (
 ''');
 
           await db.execute('''
-CREATE TABLE fruits (
+  CREATE TABLE fruits (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -67,7 +67,7 @@ CREATE TABLE fruits (
 ''');
 
           await db.execute('''
-CREATE TABLE supplier_purchases (
+  CREATE TABLE supplier_purchases (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   supplier_id INTEGER NOT NULL,
   total_amount REAL NOT NULL,

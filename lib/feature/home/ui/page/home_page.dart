@@ -11,13 +11,19 @@ import 'imports_page.dart';
 class HomePage extends StatelessWidget {
   HomePage({super.key});
 
-  final List<String> titles = [" كشوفات", "فواتير", "زمامات", "يوميه", "جرد"];
+  final List<String> titles = [
+    " كشوفات",
+    "فواتير",
+    "زمامات",
+    "يوميه",
+    "المزارعين",
+  ];
   final List icons = [
     Icons.add,
     Icons.browse_gallery_outlined,
     Icons.money_outlined,
     Icons.abc_outlined,
-    Icons.access_alarm_sharp,
+    Icons.shopping_cart_checkout,
   ];
 
   @override

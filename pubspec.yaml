@@ -13,17 +13,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  intl:
   cupertino_icons: ^1.0.8
   sqflite_common_ffi: ^2.3.5
   flutter_screenutil: ^5.9.3
   ffi: ^2.1.4
   win32: ^5.13.0
-  pluto_grid: ^8.0.0
+  pluto_grid:
   path_provider: ^2.1.5
   path: ^1.9.1
   window_manager: ^0.4.3
   flutter_distributor: ^0.5.1
+  orm:
+
 
 
 

@@ -1,9 +1,8 @@
 import 'package:accounting_app/feature/home/data/db/data_base.dart';
-import 'package:accounting_app/feature/home/ui/page/home_page.dart';
 import 'package:accounting_app/feature/home/ui/widgets/gradient_app_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pluto_grid/pluto_grid.dart';
 
 class DailyOperationWidget extends StatefulWidget {
   const DailyOperationWidget({super.key});
@@ -13,150 +12,214 @@ class DailyOperationWidget extends StatefulWidget {
 }
 
 class _DailyOperationWidgetState extends State<DailyOperationWidget> {
-  final List<TextEditingController> incomeControllers = [];
-  final List<TextEditingController> spendControllers = [];
+  late List<PlutoColumn> inComeColumns;
+  late List<PlutoColumn> spendColumns;
+  late List<PlutoRow> inComeRows;
+  late List<PlutoRow> spendRows;
+  List<PlutoRow> rows = [];
+  late PlutoGridStateManager stateManager;
 
   @override
   void initState() {
     super.initState();
+    inComeColumns = _buildColumns("الواردات");
+    spendColumns = _buildColumns("الصادرات");
+    inComeRows = [];
+    spendRows = [];
     initializeData();
+  }
+
+  List<PlutoColumn> _buildColumns(String title) {
+    return [
+      PlutoColumn(
+        title: title,
+        field: 'type',
+        type: PlutoColumnType.select(['income', 'spend']),
+        renderer: (ctx) {
+          final value = ctx.cell.value;
+          return Text(
+            value == 'income' ? 'وارد' : 'مصروف',
+            style: TextStyle(
+              color: value == 'income' ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        },
+        enableHideColumnMenuItem: true,
+        enableFilterMenuItem: false,
+      ),
+      PlutoColumn(
+        title: 'id',
+        field: 'id',
+        type: PlutoColumnType.text(),
+        hide: true,
+      ),
+    ];
   }
 
   Future<void> initializeData() async {
     await FruitShopDatabase.archiveAndResetIfNewDay();
     final ops = await FruitShopDatabase.getTodayOperations();
 
-    for (var op in ops) {
-      final controller = TextEditingController(text: op['amount'].toString());
-      if (op['type'] == 'income') {
-        incomeControllers.add(controller);
-      } else {
-        spendControllers.add(controller);
-      }
-    }
+    final List<PlutoRow> tempRows =
+        ops.map((op) {
+          return PlutoRow(
+            cells: {
+              'type': PlutoCell(value: op['type']),
+              'amount': PlutoCell(value: op['amount'].toString()),
+              'id': PlutoCell(value: op['id']),
+            },
+          );
+        }).toList();
 
-    setState(() {});
+    setState(() {
+      rows = tempRows;
+    });
   }
 
-  double get incomeTotal => incomeControllers.fold(0.0, (sum, c) {
-    final val = double.tryParse(c.text) ?? 0;
-    return sum + val;
-  });
+  double get incomeTotal {
+    return rows.where((row) => row.cells['type']?.value == 'income').fold(0.0, (
+      sum,
+      row,
+    ) {
+      return sum +
+          (double.tryParse(row.cells['amount']?.value.toString() ?? '') ?? 0);
+    });
+  }
 
-  double get spendTotal => spendControllers.fold(0.0, (sum, c) {
-    final val = double.tryParse(c.text) ?? 0;
-    return sum + val;
-  });
+  double get spendTotal {
+    return rows.where((row) => row.cells['type']?.value == 'spend').fold(0.0, (
+      sum,
+      row,
+    ) {
+      return sum +
+          (double.tryParse(row.cells['amount']?.value.toString() ?? '') ?? 0);
+    });
+  }
 
   double get operationResult => incomeTotal - spendTotal;
 
-  Future<void> addRow(List<TextEditingController> list, String type) async {
-    final controller = TextEditingController();
-    list.add(controller);
-    await FruitShopDatabase.insertOperation(0.0, type);
+  Future<void> onChanged(PlutoGridOnChangedEvent event) async {
+    final row = event.row;
+    final amount =
+        double.tryParse(row.cells['amount']?.value.toString() ?? '0') ?? 0;
+    final type = row.cells['type']?.value.toString();
+    final id = row.cells['id']?.value;
+
+    final db = await FruitShopDatabase.database;
+    await db.update(
+      'daily_operations',
+      {'amount': amount, 'type': type},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
     setState(() {});
   }
 
-  @override
-  void dispose() {
-    for (final c in incomeControllers) {
-      c.dispose();
-    }
-    for (final c in spendControllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
+  Future<void> addNewOperation(String type) async {
+    final db = await FruitShopDatabase.database;
+    final id = await db.insert('daily_operations', {
+      'type': type,
+      'amount': 0.0,
+      'date': DateTime.now().toIso8601String().substring(0, 10),
+    });
 
-  Widget buildColumn(
-    String title,
-    List<TextEditingController> controllers,
-    VoidCallback onAdd,
-    String type,
-  ) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          ...controllers.asMap().entries.map((entry) {
-            final index = entry.key;
-            final c = entry.value;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: TextField(
-                controller: c,
-                keyboardType: TextInputType.number,
-                onChanged: (val) async {
-                  final parsed = double.tryParse(val) ?? 0.0;
-                  final db = await FruitShopDatabase.database;
-                  final rows = await db.query(
-                    'daily_operations',
-                    where: 'type = ?',
-                    whereArgs: [type],
-                  );
-                  if (index < rows.length) {
-                    await db.update(
-                      'daily_operations',
-                      {'amount': parsed},
-                      where: 'id = ?',
-                      whereArgs: [rows[index]['id']],
-                    );
-                  }
-                  setState(() {});
-                },
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-            );
-          }),
-          TextButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: Text("إضافة", style: TextStyle(fontSize: 12.sp)),
-          ),
-        ],
-      ),
+    final newRow = PlutoRow(
+      cells: {
+        'type': PlutoCell(value: type),
+        'amount': PlutoCell(value: '0.0'),
+        'id': PlutoCell(value: id),
+      },
     );
+
+    setState(() {
+      inComeRows.add(newRow);
+      stateManager.appendRows([newRow]);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: GradientAppBar(context: context, title: "يومية", hasPop: true),
-      body: BackGroundWidget(
-        Center(
-          child: Container(
-            color: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
-            width: MediaQuery.sizeOf(context).width * 0.4,
+      appBar: GradientAppBar(context: context, title: 'اليومية', hasPop: true),
+      body: Center(
+        child: SizedBox(
+          width: MediaQuery.sizeOf(context).width * .43,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                Expanded(
+                Flexible(
                   child: Row(
                     children: [
-                      buildColumn("الواردات", incomeControllers, () {
-                        addRow(incomeControllers, "income");
-                      }, "income"),
-                      SizedBox(width: 16.w),
-                      buildColumn("المصروفات", spendControllers, () {
-                        addRow(spendControllers, "spend");
-                      }, "spend"),
+                      Expanded(
+                        child: PlutoGrid(
+                          columns: spendColumns,
+                          rows: spendRows,
+                          onLoaded:
+                              (event) => stateManager = event.stateManager,
+                          onChanged: onChanged,
+                          configuration: PlutoGridConfiguration(
+                            columnSize: PlutoGridColumnSizeConfig(
+                              autoSizeMode: PlutoAutoSizeMode.scale,
+                            ),
+                            style: PlutoGridStyleConfig(
+                              gridBorderRadius: BorderRadius.circular(10.r),
+                              activatedBorderColor: Colors.green,
+                              activatedColor: Colors.lightGreen,
+                              rowHeight: 40.h,
+                              columnHeight: 45.h,
+                            ),
+                            localeText: const PlutoGridLocaleText(),
+                            tabKeyAction:
+                                PlutoGridTabKeyAction.moveToNextOnEdge,
+                          ),
+                          noRowsWidget: IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: () => addNewOperation('spend'),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: PlutoGrid(
+                          columns: inComeColumns,
+                          rows: inComeRows,
+                          onLoaded:
+                              (event) => stateManager = event.stateManager,
+                          onChanged: onChanged,
+                          configuration: PlutoGridConfiguration(
+                            columnSize: PlutoGridColumnSizeConfig(
+                              autoSizeMode: PlutoAutoSizeMode.scale,
+                            ),
+                            style: PlutoGridStyleConfig(
+                              gridBorderRadius: BorderRadius.circular(10.r),
+                              activatedBorderColor: Colors.green,
+                              activatedColor: Colors.lightGreen,
+                              rowHeight: 40.h,
+                              columnHeight: 45.h,
+                            ),
+                            localeText: const PlutoGridLocaleText(),
+                          ),
+                          noRowsWidget: IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: () => addNewOperation('income'),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Divider(height: 32),
-                Text("إجمالي الواردات: ${incomeTotal.toStringAsFixed(2)}"),
+                const SizedBox(height: 16),
+
+                SizedBox(height: 20.h),
+                Text("إجمالي الإيرادات: ${incomeTotal.toStringAsFixed(2)}"),
                 Text("إجمالي المصروفات: ${spendTotal.toStringAsFixed(2)}"),
-                SizedBox(height: 8),
+                SizedBox(height: 6.h),
                 Text(
-                  "صافي: ${operationResult.toStringAsFixed(2)}",
+                  "الصافي: ${operationResult.toStringAsFixed(2)}",
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: operationResult >= 0 ? Colors.green : Colors.red,
                   ),

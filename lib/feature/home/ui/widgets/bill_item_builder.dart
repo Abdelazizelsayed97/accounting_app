@@ -99,28 +99,13 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
             child: Column(
               children: [
                 Text(
-                  "زسكر للخضراوات",
+                  "سكر للخضراوات",
                   style: TextStyle(color: Colors.black, fontSize: 16.sp),
                 ),
                 SizedBox(
                   height: 30.h,
                   child: Row(
                     children: [
-                      if (widget.canEdit) ...[
-                        GestureDetector(
-                          onTap: () {
-                            extractBillItemsFromGrid();
-                            setState(() {});
-                          },
-                          child: Text(
-                            "حفظ",
-                            style: TextStyle(
-                              fontSize: 8.sp,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ),
-                      ],
                       SizedBox(width: 8.w),
                       Flexible(
                         child: AppField(
@@ -128,6 +113,9 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
                           canEdit: widget.canEdit,
                         ),
                       ),
+                      SizedBox(width: 8.w),
+                      Text("/الاسم", style: TextStyle(fontSize: 8.sp)),
+                      SizedBox(width: 8.w),
                     ],
                   ),
                 ),
@@ -159,42 +147,13 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
               columns: widget.columns,
               rows: widget.rows,
               onLoaded: (event) => stateManager = event.stateManager,
-              onChanged: (event) => setState(() => updateRowTotal(event.row)),
-
-              createFooter:
-                  (_) => Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4.h),
-                    child: Column(
-                      children: [
-                        if (widget.canEdit)
-                          GestureDetector(
-                            onTap: addNewRow,
-                            child: Container(
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: AppColors.gradientList,
-                                ),
-                                borderRadius: BorderRadius.circular(30.r),
-                              ),
-                              height: 20.h,
-                              width: 100.w,
-                              child: Text(
-                                "إضافة صف جديد",
-                                style: TextStyle(fontSize: 8.sp),
-                              ),
-                            ),
-                          ),
-                        SizedBox(height: 4.h),
-                        buildFooterSums(),
-                      ],
-                    ),
-                  ),
+              onChanged: (event) => updateRowTotal(event.row),
             ),
           ),
           Padding(
             padding: EdgeInsets.only(top: 12.h),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   "الاجمالي الكلي: ${widget.data?.total ?? 0}",
@@ -208,6 +167,18 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
                     style: TextStyle(fontSize: 8.sp, color: Colors.cyan),
                   ),
                 ),
+                if (widget.canEdit) ...[
+                  GestureDetector(
+                    onTap: () {
+                      extractBillItemsFromGrid();
+                      setState(() {});
+                    },
+                    child: Text(
+                      "حفظ",
+                      style: TextStyle(fontSize: 8.sp, color: Colors.green),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
