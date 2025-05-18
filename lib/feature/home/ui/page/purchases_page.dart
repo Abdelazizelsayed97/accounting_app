@@ -43,22 +43,28 @@ class _PurchasesPageState extends State<PurchasesPage> {
       if (purchaseId == null) continue;
 
       if (!groupedPurchases.containsKey(purchaseId)) {
-        groupedPurchases[purchaseId] = PurchaseEntity(
+        groupedPurchases[purchaseId] = PurchaseEntity.fromMap(row);
+
+        PurchaseEntity(
           bill: [],
           ownerName: row['buyer_name']?.toString() ?? '',
           total: (row['total_amount'] as num?)?.toDouble() ?? 0.0,
+          date: row['date'].toString(),
         );
       }
       final item = BillItemEntity(
         customerName: row['buyer_name']?.toString() ?? '',
-        fruitName: row['fruit_name']?.toString() ?? '', // The fruit name
+        fruitName: row['fruit_name']?.toString() ?? '',
+        // The fruit name
         price: (row['item_price'] as num?)?.toDouble() ?? 0.0,
         weight: (row['item_weight'] as num?)?.toDouble() ?? 0.0,
         count: (row['item_count'] as int?) ?? 0,
-        type:
-            row['type']?.toString() ??
-            '', // Optional: if you store category/type
+        type: row['type']?.toString() ?? '',
+        // Optional: if you store category/type
         total: (row['item_total'] as num?)?.toDouble() ?? 0.0,
+        tax: row['tax']?.toString() ?? '',
+        delivery: row['delivery']?.toString() ?? '',
+        services: row['services']?.toString() ?? '',
       );
 
       groupedPurchases[purchaseId]!.bill.add(item);
@@ -110,6 +116,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                     columns: columns,
                     rows: rows,
                     onAddRow: addNewRow,
+                    isPurchasePage: true,
                   ),
                 ),
                 SizedBox(height: 20.h),
@@ -122,6 +129,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                         rows: buildPlutoRowsFromPurchase(e),
                         data: e,
                         canEdit: false,
+                        isPurchasePage: true,
                       ),
                     ),
                   ),

@@ -15,6 +15,9 @@ void main() async {
       total: 14900,
       type: "mango",
       fruitName: "mango",
+      tax: "200",
+      delivery: "100",
+      services: '150',
     ),
     BillItemEntity(
       price: 10020,
@@ -24,6 +27,9 @@ void main() async {
       total: 149001,
       type: "mango",
       fruitName: "mango",
+      tax: "200",
+      delivery: "100",
+      services: '150',
     ),
     BillItemEntity(
       price: 1234,
@@ -33,6 +39,9 @@ void main() async {
       total: 45678,
       type: "mango",
       fruitName: "mango",
+      tax: "200",
+      delivery: "100",
+      services: '150',
     ),
   ];
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,18 +60,19 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
   });
+
   // FruitShopDatabase.dede();
 
-  await FruitShopDatabase.getPurchasesByDate(DateTime(2025, 5, 14));
-  var zz = await FruitShopDatabase.getAllFruits();
-  print('zzzzzzzzzzzzz ${zz}');
-  var result = await FruitShopDatabase.insertSupplierPurchase(
-    PurchaseEntity(bill: xx, ownerName: "Ali", total: 1000),
-  );
-  await FruitShopDatabase.insertBuyerPurchase(
-    PurchaseEntity(bill: xx, ownerName: "karim", total: 1000),
-  );
-  print('result = $result');
+  // await FruitShopDatabase.getPurchasesByDate(DateTime(2025, 5, 14));
+  // var zz = await FruitShopDatabase.getAllFruits();
+  // print('zzzzzzzzzzzzz ${zz}');
+  // var result = await FruitShopDatabase.insertSupplierPurchase(
+  //   PurchaseEntity(bill: xx, ownerName: "Ali", total: 1000),
+  // );
+  // await FruitShopDatabase.insertBuyerPurchase(
+  //   PurchaseEntity(bill: xx, ownerName: "karim", total: 1000),
+  // );
+  // print('result = $result');
 
   runApp(MyApp());
 }

@@ -51,6 +51,7 @@ class _ImportsPageState extends State<ImportsPage> {
           bill: [],
           ownerName: row['supplier_name']?.toString() ?? '',
           total: (row['total_amount'] as num?)?.toDouble() ?? 0.0,
+          date: row['date'].toString(),
         );
       }
       final item = BillItemEntity(
@@ -61,6 +62,9 @@ class _ImportsPageState extends State<ImportsPage> {
         count: (row['item_count'] as int?) ?? 0,
         type: row['type']?.toString() ?? '',
         total: (row['item_total'] as num?)?.toDouble() ?? 0.0,
+        tax: row['tax'].toString(),
+        delivery: row['delivery'].toString(),
+        services: row['services'].toString(),
       );
 
       groupedPurchases[purchaseId]!.bill.add(item);
@@ -115,6 +119,7 @@ class _ImportsPageState extends State<ImportsPage> {
                     columns: columns,
                     rows: rows,
                     onAddRow: addNewRow,
+                    isPurchasePage: false,
                   ),
                 ),
                 SizedBox(height: 20.h),
@@ -128,6 +133,7 @@ class _ImportsPageState extends State<ImportsPage> {
                         rows: buildPlutoRowsFromPurchase(e),
                         data: e,
                         canEdit: false,
+                        isPurchasePage: false,
                       ),
                     ),
                   );

@@ -25,6 +25,9 @@ dependencies:
   window_manager: ^0.4.3
   flutter_distributor: ^0.5.1
   orm:
+  pdf: ^3.11.3
+  printing: ^5.14.2
+
 
 
 

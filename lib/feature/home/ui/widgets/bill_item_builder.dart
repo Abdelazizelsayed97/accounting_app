@@ -1,7 +1,11 @@
 import 'package:accounting_app/feature/home/domain/entity/bill_entity.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:pluto_grid/pluto_grid.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../core/app_field.dart';
 import '../../../../core/colors.dart';
@@ -13,6 +17,7 @@ class PurchaseGridWidget extends StatefulWidget {
   final void Function()? onAddRow;
   final PurchaseEntity? data;
   final bool canEdit;
+  final bool isPurchasePage;
 
   const PurchaseGridWidget({
     super.key,
@@ -21,6 +26,7 @@ class PurchaseGridWidget extends StatefulWidget {
     this.onAddRow,
     this.data,
     required this.canEdit,
+    required this.isPurchasePage,
   });
 
   @override
@@ -31,13 +37,28 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
   final TextEditingController controller = TextEditingController();
   PlutoGridStateManager? stateManager;
 
+  double discount = 0.0;
+  double paidAmount = 0.0;
+
   double get rowHeight => 20.h;
 
   double get headerHeight => 20.h;
 
   double calculateGridHeight() {
-    return headerHeight + (widget.rows.length * rowHeight) + 100.h;
+    return headerHeight + (widget.rows.length * rowHeight) + 40.h;
   }
+
+  double get grandTotal {
+    double total = 0;
+    for (var row in widget.rows) {
+      total += row.cells['total']?.value ?? 0;
+    }
+    return total;
+  }
+
+  double get finalAmount => grandTotal - discount;
+
+  double get remainingAmount => finalAmount - paidAmount;
 
   void updateRowTotal(PlutoRow row) {
     final price = row.cells['price']?.value ?? 0;
@@ -56,28 +77,159 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
 
   @override
   void initState() {
-    print('data ==== ${widget.data?.ownerName}');
     super.initState();
     controller.text = widget.data?.ownerName ?? '';
   }
 
-  Widget buildFooterSums() {
-    double totalPrice = 0;
-    double totalWeight = 0;
-    double grandTotal = 0;
+  Future<void> printBill(
+    List<BillItemEntity> billItems,
+    String ownerName,
+  ) async {
+    final pdf = pw.Document();
 
-    for (var row in widget.rows) {
-      totalPrice += row.cells['price']?.value ?? 0;
-      totalWeight += row.cells['weight']?.value ?? 0;
-      grandTotal += row.cells['total']?.value ?? 0;
-    }
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('فاتورة المشتريات', style: pw.TextStyle(fontSize: 24)),
+              pw.SizedBox(height: 10),
+              pw.Text('الاسم: $ownerName'),
+              pw.SizedBox(height: 10),
+              pw.Table.fromTextArray(
+                headers: [
+                  'العميل',
+                  'الصنف',
+                  'السعر',
+                  'الوزن',
+                  'العدد',
+                  'الاجمالي',
+                ],
+                data:
+                    billItems.map((item) {
+                      return [
+                        item.customerName,
+                        item.fruitName,
+                        item.price.toString(),
+                        item.weight.toString(),
+                        item.count.toString(),
+                        item.total.toString(),
+                      ];
+                    }).toList(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+  }
+
+  TableRow _buildTableRow(
+    String title,
+    String value, {
+    bool isEditable = false,
+    void Function(String)? onChanged,
+  }) {
+    return TableRow(
+      decoration: BoxDecoration(),
       children: [
-        Text("مجموع السعر: $totalPrice", style: TextStyle(fontSize: 6.sp)),
-        Text("مجموع الوزن: $totalWeight", style: TextStyle(fontSize: 6.sp)),
-        Text("الاجمالي الكلي: $grandTotal", style: TextStyle(fontSize: 6.sp)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          child: Text(title, style: TextStyle(fontSize: 8.sp)),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          child:
+              isEditable
+                  ? TextField(
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: onChanged,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(fontSize: 8.sp),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 4.h),
+                    ),
+                  )
+                  : Text(value, style: TextStyle(fontSize: 8.sp)),
+        ),
+      ],
+    );
+  }
+
+  Widget buildSummaryTableForPurchases() {
+    return Table(
+      defaultColumnWidth: FixedColumnWidth(30.w),
+      border: TableBorder.all(
+        color: AppColors.primaryColor,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        _buildTableRow(
+          "تنزيل",
+          discount.toStringAsFixed(2),
+          isEditable: true,
+          onChanged:
+              (val) => setState(() => discount = double.tryParse(val) ?? 0.0),
+        ),
+        _buildTableRow(
+          "عموله",
+          (grandTotal + (grandTotal * .08)).toStringAsFixed(2),
+          onChanged:
+              (val) => setState(() => discount = double.tryParse(val) ?? 0.0),
+        ),
+        _buildTableRow(
+          "المجموع الكلي",
+          grandTotal.toStringAsFixed(2),
+          onChanged: (p0) => setState(() {}),
+        ),
+      ],
+    );
+  }
+
+  Widget buildSummaryTableForImports() {
+    return Table(
+      defaultColumnWidth: FixedColumnWidth(30.w),
+      border: TableBorder.all(
+        color: AppColors.primaryColor,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        _buildTableRow(
+          "تنزيل",
+          discount.toStringAsFixed(1),
+          isEditable: true,
+          onChanged: (val) {
+            setState(() => discount = double.tryParse(val) ?? 0.0);
+          },
+        ),
+        _buildTableRow(
+          "عموله",
+          remainingAmount.toStringAsFixed(1),
+          isEditable: true,
+          onChanged: (p0) => setState(() {}),
+        ),
+
+        _buildTableRow(
+          "ناولون",
+          paidAmount.toStringAsFixed(2),
+          isEditable: true,
+          onChanged: (val) {
+            setState(() => paidAmount = double.tryParse(val) ?? 0.0);
+          },
+        ),
+        _buildTableRow(
+          "المجموع الكلي",
+          grandTotal.toStringAsFixed(1),
+          onChanged: (p0) => setState(() {}),
+        ),
       ],
     );
   }
@@ -150,6 +302,15 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
               onChanged: (event) => updateRowTotal(event.row),
             ),
           ),
+          // SizedBox(height: 12.h),
+          SizedBox(
+            width: MediaQuery.sizeOf(context).width * .2,
+            height: 100.h,
+            child:
+                widget.isPurchasePage
+                    ? buildSummaryTableForPurchases()
+                    : buildSummaryTableForImports(),
+          ),
           Padding(
             padding: EdgeInsets.only(top: 12.h),
             child: Row(
@@ -159,26 +320,33 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
                   "الاجمالي الكلي: ${widget.data?.total ?? 0}",
                   style: TextStyle(fontSize: 6.sp),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  style: ButtonStyle(),
-                  child: Text(
-                    "تعديل",
-                    style: TextStyle(fontSize: 8.sp, color: Colors.cyan),
-                  ),
+                IconButton(
+                  onPressed: () {
+                    extractBillItemsFromGrid();
+                    setState(() {});
+                  },
+                  icon: Icon(Icons.edit, color: Colors.grey.shade400),
                 ),
                 if (widget.canEdit) ...[
-                  GestureDetector(
-                    onTap: () {
+                  IconButton(
+                    onPressed: () {
                       extractBillItemsFromGrid();
                       setState(() {});
                     },
-                    child: Text(
-                      "حفظ",
-                      style: TextStyle(fontSize: 8.sp, color: Colors.green),
+                    icon: Icon(
+                      Icons.save_outlined,
+                      color: Colors.grey.shade400,
                     ),
                   ),
                 ],
+                IconButton(
+                  onPressed:
+                      () => printBill(widget.data?.bill ?? [], controller.text),
+                  icon: Icon(Icons.print, color: Colors.grey.shade400),
+                ),
+                widget.canEdit
+                    ? Text(widget.data?.date ?? "ggggggg")
+                    : SizedBox.shrink(),
               ],
             ),
           ),
@@ -189,6 +357,7 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
 
   void extractBillItemsFromGrid() {
     if (stateManager == null) return;
+    print('stateManager ${discount.toString()}');
 
     final billItems =
         stateManager!.rows.map((row) {
@@ -200,23 +369,25 @@ class _PurchaseGridWidgetState extends State<PurchaseGridWidget> {
             total: (row.cells['item_total']?.value as num?)?.toDouble() ?? 0.0,
             type: row.cells['type']?.value?.toString() ?? '',
             fruitName: row.cells['type']?.value?.toString() ?? '',
+
+            // These now reflect values from summary fields:
+            delivery: paidAmount.toString(),
+            services: remainingAmount.toString(),
+            tax: discount.toString(),
           );
         }).toList();
 
-    print('Collected ${billItems.length} items:');
-    for (final item in billItems) {
-      print('${item.customerName} | ${item.price} | ${item.total}');
-    }
     var input = PurchaseEntity(
       bill: billItems,
       ownerName: controller.text,
-      total: 0,
+      total: finalAmount,
+      date: DateTime.now().toString(),
     );
+
     FruitShopDatabase.insertSupplierPurchase(input).then((value) {
       setState(() {
         stateManager?.rows.clear();
       });
     });
-    // Now you can use `billItems` to create a new PurchaseEntity and insert it to the DB
   }
 }

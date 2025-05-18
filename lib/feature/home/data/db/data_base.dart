@@ -27,21 +27,39 @@ class FruitShopDatabase {
         version: 1,
         onCreate: (db, version) async {
           await db.execute('''
-          CREATE TABLE IF NOT EXISTS daily_operations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            amount REAL NOT NULL,
-            type TEXT CHECK(type IN ('income', 'spend')) NOT NULL,
-            date TEXT NOT NULL
-          )
+    CREATE TABLE IF NOT EXISTS daily_operations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  amount REAL NOT NULL,
+  type TEXT CHECK(type IN ('income', 'spend')) NOT NULL,
+  date TEXT NOT NULL UNIQUE
+);
         ''');
           await db.execute('''
-          CREATE TABLE IF NOT EXISTS daily_operations_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            total_income REAL,
-            total_spend REAL,
-            date TEXT NOT NULL
-          )
+CREATE TABLE IF NOT EXISTS daily_operations_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  total_income REAL,
+  total_spend REAL,
+  date TEXT NOT NULL,
+  FOREIGN KEY (date) REFERENCES daily_operations(date) ON DELETE CASCADE
+);
         ''');
+          await db.execute('''
+  CREATE TABLE FARMERS_ENTITY (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+''');
+
+          await db.execute('''
+  CREATE TABLE FARMERS (
+    farmers_entity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+ 
+    FOREIGN KEY (farmers_entity_id) REFERENCES FARMERS_ENTITY(id) ON DELETE CASCADE
+  );
+''');
           await db.execute('''
   CREATE TABLE suppliers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +92,7 @@ class FruitShopDatabase {
   date TEXT DEFAULT CURRENT_TIMESTAMP,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
-);
+  );
 ''');
 
           await db.execute('''
@@ -85,10 +103,13 @@ CREATE TABLE supplier_bill_items (
   buyer_id INTEGER NOT NULL,
   price REAL NOT NULL,
   weight REAL NOT NULL,
+  tax REAL NOT NULL,
+  delivery REAL NOT NULL,
+  services REAL NOT NULL,
   count INTEGER DEFAULT 0,
   total REAL GENERATED ALWAYS AS (price * weight) STORED,
   FOREIGN KEY (purchase_id) REFERENCES supplier_purchases(id) ON DELETE CASCADE,
-  FOREIGN KEY (fruit_id) REFERENCES fruits(id) ON DELETE RESTRICT
+  FOREIGN KEY (fruit_id) REFERENCES fruits(id) ON DELETE RESTRICT,
   FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE RESTRICT
 );
 ''');
@@ -202,6 +223,9 @@ CREATE TABLE supplier_bill_items (
         'weight': item.weight,
         'count': item.count,
         'buyer_id': buyerId,
+        'tax': item.tax,
+        'delivery': item.delivery,
+        'services': item.services,
       });
     }
 
@@ -467,27 +491,26 @@ CREATE TABLE supplier_bill_items (
       sp.id AS purchase_id,
       sp.date,
       sp.total_amount,
-
       s.id AS supplier_id,
       COALESCE(s.name, '') AS supplier_name,
-
       sbi.id AS bill_item_id,
       f.id AS fruit_id,
       f.name AS fruit_name,
       b.id AS buyer_id,
       b.name AS buyer_name,
-
       sbi.price AS item_price,
       sbi.weight AS item_weight,
       sbi.count AS item_count,
-      sbi.total AS item_total
+      sbi.total AS item_total,
+      sbi.tax AS item_tax,
+      sbi.delivery AS item_delivery,
+      sbi.services AS item_services
 
     FROM supplier_purchases sp
-      JOIN suppliers s ON sp.supplier_id = s.id
-      LEFT JOIN supplier_bill_items sbi ON sbi.purchase_id = sp.id
-      LEFT JOIN fruits f ON f.id = sbi.fruit_id
-      LEFT JOIN buyers b ON b.id = sbi.buyer_id
-
+    JOIN suppliers s ON sp.supplier_id = s.id
+    LEFT JOIN supplier_bill_items sbi ON sbi.purchase_id = sp.id
+    LEFT JOIN fruits f ON f.id = sbi.fruit_id
+    LEFT JOIN buyers b ON b.id = sbi.buyer_id
     ORDER BY sp.date DESC, sbi.id ASC;
   ''');
   }
@@ -656,6 +679,9 @@ CREATE TABLE supplier_bill_items (
                 total: (item['total'] as num?)?.toDouble() ?? 0.0,
                 type: item['type'] as String? ?? '',
                 fruitName: item["item_name"] as String,
+                tax: item['tax'] as String,
+                delivery: item['delivery'] as String,
+                services: item['services'] as String,
               ),
             )
             .toList();
@@ -664,6 +690,7 @@ CREATE TABLE supplier_bill_items (
       bill: billItems,
       ownerName: buyerName,
       total: (purchase['total_amount'] as num?)?.toDouble() ?? 0.0,
+      date: purchase["date"].toString(),
     );
   }
 
